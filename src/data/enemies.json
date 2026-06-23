@@ -1,0 +1,20 @@
+[
+  {
+    "id": "gloom_wisp",
+    "name": "Gloom Wisp",
+    "hp": 72,
+    "attack": 12,
+    "defense": 3,
+    "xp": 12,
+    "gold": 6
+  },
+  {
+    "id": "rust_mite",
+    "name": "Rust Mite",
+    "hp": 44,
+    "attack": 9,
+    "defense": 2,
+    "xp": 8,
+    "gold": 3
+  }
+]
