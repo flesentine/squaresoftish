@@ -1,0 +1,18 @@
+[
+  {
+    "id": "sky_spark",
+    "name": "Sky Spark",
+    "mpCost": 4,
+    "power": 16,
+    "target": "enemy",
+    "description": "A small burst of old sky-tech energy."
+  },
+  {
+    "id": "guard_oath",
+    "name": "Guard Oath",
+    "mpCost": 3,
+    "power": 10,
+    "target": "ally",
+    "description": "A defensive stance that steadies the party."
+  }
+]
