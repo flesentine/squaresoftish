@@ -49,35 +49,45 @@ export class DialogueSystem {
   private createBox(): void {
     this.container?.destroy(true);
 
-    const boxWidth = GAME_WIDTH - 80;
-    const boxHeight = 132;
-    const x = 40;
-    const y = GAME_HEIGHT - boxHeight - 32;
+    const margin = 32;
+    const boxWidth = GAME_WIDTH - margin * 2;
+    const boxHeight = 156;
+    const x = margin;
+    const y = GAME_HEIGHT - boxHeight - 24;
+    const textWidth = boxWidth - 40;
 
-    const panel = this.scene.add.rectangle(x, y, boxWidth, boxHeight, 0x10192f, 0.96).setOrigin(0);
+    const shadow = this.scene.add.rectangle(5, 5, boxWidth, boxHeight, 0x000000, 0.42).setOrigin(0);
+    const panel = this.scene.add.rectangle(0, 0, boxWidth, boxHeight, 0x10192f, 0.96).setOrigin(0);
     panel.setStrokeStyle(3, 0xd9c879);
 
-    this.speakerText = this.scene.add.text(x + 20, y + 14, '', {
+    this.speakerText = this.scene.add.text(20, 14, '', {
       fontFamily: 'monospace',
       fontSize: '20px',
-      color: '#ffe58a'
+      color: '#ffe58a',
+      fixedWidth: textWidth
     });
 
-    this.bodyText = this.scene.add.text(x + 20, y + 48, '', {
+    this.bodyText = this.scene.add.text(20, 50, '', {
       fontFamily: 'monospace',
-      fontSize: '20px',
+      fontSize: '18px',
       color: '#f6f1de',
-      wordWrap: { width: boxWidth - 40 }
+      fixedWidth: textWidth,
+      fixedHeight: 72,
+      wordWrap: { width: textWidth, useAdvancedWrap: true },
+      lineSpacing: 5
     });
 
-    this.promptText = this.scene.add.text(x + boxWidth - 132, y + boxHeight - 28, 'E / Space', {
+    this.promptText = this.scene.add.text(boxWidth - 20, boxHeight - 22, 'E / Space', {
       fontFamily: 'monospace',
-      fontSize: '16px',
+      fontSize: '15px',
       color: '#9fb7ff'
-    });
+    }).setOrigin(1, 0.5);
 
-    this.container = this.scene.add.container(0, 0, [panel, this.speakerText, this.bodyText, this.promptText]);
-    this.container.setScrollFactor(0);
+    const dialogueObjects = [shadow, panel, this.speakerText, this.bodyText, this.promptText];
+    dialogueObjects.forEach((object) => object.setScrollFactor(0, 0));
+
+    this.container = this.scene.add.container(x, y, dialogueObjects);
+    this.container.setScrollFactor(0, 0);
     this.container.setDepth(1000);
   }
 
