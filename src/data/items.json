@@ -1,0 +1,10 @@
+[
+  {
+    "id": "potion",
+    "name": "Potion",
+    "quantity": 3,
+    "healAmount": 55,
+    "target": "ally",
+    "description": "Restore 55 HP"
+  }
+]
