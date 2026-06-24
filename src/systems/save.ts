@@ -6,7 +6,7 @@ export function createNewSave(): SaveState {
   return {
     version: 1,
     playerName: 'Rowan',
-    mapId: 'vael-field',
+    mapId: 'town',
     position: { x: 240, y: 260 },
     facing: 'down',
     party: [
