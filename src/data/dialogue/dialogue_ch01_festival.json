@@ -1,0 +1,74 @@
+[
+  {
+    "id": "elder-mira",
+    "name": "Elder Mira",
+    "x": 14,
+    "y": 7,
+    "texture": "npc-mira",
+    "dialogue": [
+      {
+        "speaker": "Elder Mira",
+        "portrait": "elder_mira_neutral",
+        "text": "The old road is open again. That means trouble, or treasure. Usually both."
+      },
+      {
+        "speaker": "Elder Mira",
+        "portrait": "elder_mira_neutral",
+        "text": "Talk to everyone. Small towns hide big quests."
+      },
+      {
+        "speaker": "Elder Mira",
+        "portrait": "elder_mira_concerned",
+        "text": "Come back after we add inventory and I might give you a key."
+      }
+    ]
+  },
+  {
+    "id": "guard-toma",
+    "name": "Guard Toma",
+    "x": 24,
+    "y": 12,
+    "texture": "npc-toma",
+    "dialogue": [
+      {
+        "speaker": "Guard Toma",
+        "portrait": "guard_toma_neutral",
+        "text": "Hold it. Bandits were seen near the eastern trees."
+      },
+      {
+        "speaker": "Guard Toma",
+        "portrait": "guard_toma_neutral",
+        "text": "You can move with WASD or arrow keys. Press E or Space to talk."
+      },
+      {
+        "speaker": "Guard Toma",
+        "portrait": "guard_toma_alert",
+        "text": "Very official guard advice: save before doing anything dumb."
+      }
+    ]
+  },
+  {
+    "id": "merchant-pip",
+    "name": "Merchant Pip",
+    "x": 6,
+    "y": 16,
+    "texture": "npc-pip",
+    "dialogue": [
+      {
+        "speaker": "Merchant Pip",
+        "portrait": "merchant_pip_neutral",
+        "text": "Fresh potions! Invisible armor! Slightly haunted bread!"
+      },
+      {
+        "speaker": "Merchant Pip",
+        "portrait": "merchant_pip_smile",
+        "text": "Okay, none of that is implemented yet. But the dialogue box works."
+      },
+      {
+        "speaker": "Merchant Pip",
+        "portrait": "merchant_pip_smile",
+        "text": "Next upgrade should be shops or quests. That is where this starts feeling real."
+      }
+    ]
+  }
+]
