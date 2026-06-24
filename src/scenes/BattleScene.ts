@@ -7,10 +7,16 @@ import { calculateEnemyDamage, calculateHeroDamage, isPartyDefeated } from '../s
 import { FlagsSystem } from '../systems/flags';
 import { InventorySystem } from '../systems/inventory';
 import { SaveSystem } from '../systems/save';
-import type { EnemyData, HeroState, ItemData, SaveState, SkillData } from '../types/game';
+import {
+  fadeInScene,
+  fadeToScene,
+  isFieldAreaKey,
+  type FieldAreaKey,
+  type SceneTransitionPayload
+} from '../systems/sceneTransitions';
+import type { Direction, EnemyData, HeroState, ItemData, SaveState, SkillData } from '../types/game';
 
-interface BattleData {
-  enemyId?: string;
+interface BattleData extends SceneTransitionPayload {
   returnPosition?: { x: number; y: number };
 }
 
@@ -27,17 +33,30 @@ export class BattleScene extends Phaser.Scene {
   private enemyHpText!: Phaser.GameObjects.Text;
   private acceptingInput = true;
   private guardedHeroIds = new Set<string>();
+  private returnScene = 'FieldScene';
+  private returnAreaKey: FieldAreaKey = 'dungeon';
+  private returnSpawnId?: string;
   private returnPosition = { x: 1292, y: 408 };
+  private returnFacing: Direction = 'down';
 
   constructor() {
     super('BattleScene');
   }
 
-  create(data: BattleData): void {
+  create(data: BattleData = {}): void {
     this.state = this.registry.get('gameState') as SaveState;
-    this.returnPosition = data.returnPosition ?? this.returnPosition;
+    this.returnScene = data.returnScene ?? 'FieldScene';
+    this.returnAreaKey = data.returnAreaKey ?? (isFieldAreaKey(this.state.mapId) ? this.state.mapId : 'dungeon');
+    this.returnSpawnId = data.returnSpawnId;
+    this.returnFacing = data.facing ?? this.state.facing;
 
-    const enemyId = data.enemyId ?? 'gloom_wisp';
+    if (data.returnPosition) {
+      this.returnPosition = data.returnPosition;
+    } else if (typeof data.playerX === 'number' && typeof data.playerY === 'number') {
+      this.returnPosition = { x: data.playerX, y: data.playerY };
+    }
+
+    const enemyId = data.battleConfig?.enemyId ?? data.enemyId ?? 'gloom_wisp';
     const foundEnemy = (enemies as EnemyData[]).find((entry) => entry.id === enemyId);
     if (!foundEnemy) throw new Error(`Enemy not found: ${enemyId}`);
 
@@ -56,6 +75,8 @@ export class BattleScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-S', () => this.moveCommand(1));
     this.input.keyboard?.on('keydown-ENTER', () => this.confirmCommand());
     this.input.keyboard?.on('keydown-SPACE', () => this.confirmCommand());
+
+    fadeInScene(this);
   }
 
   private drawBattleBackground(): void {
@@ -69,7 +90,7 @@ export class BattleScene extends Phaser.Scene {
     graphics.strokeCircle(GAME_WIDTH / 2, 190, 112);
 
     this.add.image(GAME_WIDTH / 2, 206, 'monster').setScale(3);
-    this.add.text(GAME_WIDTH / 2, 88, 'Cave Shrine', {
+    this.add.text(GAME_WIDTH / 2, 88, this.getBattleLocationName(), {
       fontFamily: 'monospace',
       fontSize: '22px',
       color: '#bdfcff'
@@ -268,12 +289,32 @@ export class BattleScene extends Phaser.Scene {
 
   private defeat(): void {
     this.writeLog('The party collapses. Returning to title.');
-    this.time.delayedCall(1400, () => this.scene.start('TitleScene'));
+    this.time.delayedCall(1400, () => fadeToScene(this, 'TitleScene'));
   }
 
   private returnToField(): void {
     this.registry.set('gameState', this.state);
-    this.scene.start('FieldScene', this.returnPosition);
+
+    const payload: SceneTransitionPayload = {
+      areaKey: this.returnAreaKey,
+      facing: this.returnFacing,
+      fromScene: 'BattleScene'
+    };
+
+    if (this.returnSpawnId) {
+      payload.spawnId = this.returnSpawnId;
+    } else {
+      payload.playerX = this.returnPosition.x;
+      payload.playerY = this.returnPosition.y;
+    }
+
+    fadeToScene(this, this.returnScene, payload);
+  }
+
+  private getBattleLocationName(): string {
+    if (this.returnAreaKey === 'town') return 'Vael';
+    if (this.returnAreaKey === 'overworld') return 'Greenwood Road';
+    return 'Cave Shrine';
   }
 
   private getActiveHero(): HeroState | undefined {
