@@ -1,0 +1,28 @@
+[
+  {
+    "id": "engine-wisp",
+    "name": "Engine Wisp",
+    "textureKey": "enemy-wisp",
+    "maxHp": 92,
+    "maxMp": 10,
+    "speed": 11,
+    "attack": 14,
+    "defense": 3,
+    "weakness": "ice",
+    "drops": [{ "itemId": "potion", "chance": 0.25 }],
+    "actions": ["attack"]
+  },
+  {
+    "id": "clock-beetle",
+    "name": "Clock Beetle",
+    "textureKey": "enemy-beetle",
+    "maxHp": 126,
+    "maxMp": 0,
+    "speed": 8,
+    "attack": 18,
+    "defense": 6,
+    "weakness": "lightning",
+    "drops": [{ "itemId": "potion", "chance": 0.15 }],
+    "actions": ["attack"]
+  }
+]
