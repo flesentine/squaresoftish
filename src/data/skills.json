@@ -1,0 +1,29 @@
+[
+  {
+    "id": "spark-thrust",
+    "name": "Spark Thrust",
+    "mpCost": 4,
+    "power": 34,
+    "kind": "damage",
+    "target": "enemy",
+    "description": "Lightning spear hit"
+  },
+  {
+    "id": "mending-bell",
+    "name": "Mending Bell",
+    "mpCost": 5,
+    "power": 46,
+    "kind": "heal",
+    "target": "ally",
+    "description": "Restore ally HP"
+  },
+  {
+    "id": "guard-break",
+    "name": "Guard Break",
+    "mpCost": 4,
+    "power": 25,
+    "kind": "guard-break",
+    "target": "enemy",
+    "description": "Damage and crack armor"
+  }
+]
