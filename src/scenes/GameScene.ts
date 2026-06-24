@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { MAP_HEIGHT, MAP_WIDTH, TILE_MAP, TILE_SIZE } from '../game/map';
 import { NPCS } from '../game/npcs';
 import type { Direction, RuntimeNpc } from '../game/types';
+import { audioManager } from '../systems/audio';
+import { gameState } from '../systems/gameState';
 
 const GAME_WIDTH = 640;
 const GAME_HEIGHT = 360;
@@ -22,8 +24,10 @@ export class GameScene extends Phaser.Scene {
   private wasd!: Record<'up' | 'down' | 'left' | 'right', Phaser.Input.Keyboard.Key>;
   private interactKeys!: Phaser.Input.Keyboard.Key[];
   private battleKey!: Phaser.Input.Keyboard.Key;
+  private menuKey!: Phaser.Input.Keyboard.Key;
   private lastDirection: Direction = 'down';
   private promptText!: Phaser.GameObjects.Text;
+  private toastText!: Phaser.GameObjects.Text;
   private dialogueBox!: Phaser.GameObjects.Container;
   private dialogueName!: Phaser.GameObjects.Text;
   private dialogueText!: Phaser.GameObjects.Text;
@@ -31,6 +35,7 @@ export class GameScene extends Phaser.Scene {
   private dialogueUiObjects: Phaser.GameObjects.GameObject[] = [];
   private uiCamera!: Phaser.Cameras.Scene2D.Camera;
   private dialogueState: DialogueState | null = null;
+  private elapsedAccumulator = 0;
 
   constructor() {
     super('GameScene');
@@ -46,6 +51,7 @@ export class GameScene extends Phaser.Scene {
     this.createNpcs();
     this.createControls();
     this.createPrompt();
+    this.createToast();
     this.createDialogueBox();
 
     this.physics.add.collider(this.player, this.blockers);
@@ -54,30 +60,60 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setZoom(1.6);
+    this.cameras.main.fadeIn(280, 12, 14, 24);
     this.createUiCamera();
+
+    gameState.reviveForField();
+    audioManager.playMusic('field');
+
+    const lastMenuMessage = this.registry.get('menuMessage') as string | undefined;
+    if (lastMenuMessage) {
+      this.showToast(lastMenuMessage);
+      this.registry.remove('menuMessage');
+    }
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
+    this.elapsedAccumulator += delta / 1000;
+    if (this.elapsedAccumulator >= 1) {
+      gameState.addPlayTime(Math.floor(this.elapsedAccumulator));
+      this.elapsedAccumulator %= 1;
+    }
+
     if (this.dialogueState?.active) {
       this.player.setVelocity(0, 0);
       if (this.didPressInteract()) {
+        audioManager.unlock();
+        audioManager.playSfx('confirm');
         this.advanceDialogue();
       }
       return;
     }
 
+    if (Phaser.Input.Keyboard.JustDown(this.menuKey)) {
+      this.openMenu();
+      return;
+    }
+
     if (Phaser.Input.Keyboard.JustDown(this.battleKey)) {
+      audioManager.unlock();
+      audioManager.playSfx('battleStart');
+      this.persistPlayerPosition();
       this.player.setVelocity(0, 0);
-      this.scene.start('BattleScene');
+      this.cameras.main.fadeOut(220, 12, 14, 24);
+      this.time.delayedCall(230, () => this.scene.start('BattleScene'));
       return;
     }
 
     this.handleMovement();
+    this.persistPlayerPosition();
     this.updateInteractionPrompt();
 
     if (this.didPressInteract()) {
+      audioManager.unlock();
       const npc = this.getNearestNpc();
       if (npc) {
+        audioManager.playSfx('confirm');
         this.startDialogue(npc);
       }
     }
@@ -103,10 +139,20 @@ export class GameScene extends Phaser.Scene {
       keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER)
     ];
     this.battleKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
+    this.menuKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
   }
 
   private didPressInteract(): boolean {
     return this.interactKeys.some((key) => Phaser.Input.Keyboard.JustDown(key));
+  }
+
+  private openMenu(): void {
+    audioManager.unlock();
+    audioManager.playSfx('menu');
+    this.persistPlayerPosition();
+    this.player.setVelocity(0, 0);
+    this.scene.launch('MenuScene');
+    this.scene.pause('GameScene');
   }
 
   private handleMovement(): void {
@@ -125,6 +171,7 @@ export class GameScene extends Phaser.Scene {
 
     const vector = new Phaser.Math.Vector2(vx, vy);
     if (vector.lengthSq() > 0) {
+      audioManager.unlock();
       vector.normalize().scale(PLAYER_SPEED);
       this.player.setVelocity(vector.x, vector.y);
 
@@ -138,6 +185,11 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.player.setVelocity(0, 0);
     }
+  }
+
+  private persistPlayerPosition(): void {
+    if (!this.player) return;
+    gameState.updateField(this.player.x, this.player.y, this.lastDirection);
   }
 
   private getNearestNpc(): RuntimeNpc | null {
@@ -165,7 +217,7 @@ export class GameScene extends Phaser.Scene {
     const npc = this.getNearestNpc();
     if (!npc) {
       this.promptText
-        .setText('B: Test ATB battle')
+        .setText('M: Menu  •  B: Test ATB battle')
         .setPosition(this.player.x, this.player.y - 30)
         .setVisible(true);
       return;
@@ -192,6 +244,8 @@ export class GameScene extends Phaser.Scene {
   private advanceDialogue(): void {
     if (!this.dialogueState) return;
 
+    const currentLine = this.dialogueState.npc.dialogue[this.dialogueState.lineIndex];
+    currentLine.setFlags?.forEach((flag) => gameState.setFlag(flag));
     this.dialogueState.lineIndex += 1;
 
     if (this.dialogueState.lineIndex >= this.dialogueState.npc.dialogue.length) {
@@ -247,6 +301,32 @@ export class GameScene extends Phaser.Scene {
       .setVisible(false);
   }
 
+  private createToast(): void {
+    this.toastText = this.add
+      .text(GAME_WIDTH / 2, 24, '', {
+        fontFamily: 'monospace',
+        fontSize: '10px',
+        color: '#fff7d6',
+        backgroundColor: '#111525dd',
+        padding: { x: 8, y: 4 }
+      })
+      .setOrigin(0.5, 0)
+      .setScrollFactor(0, 0)
+      .setDepth(120)
+      .setVisible(false);
+  }
+
+  private showToast(message: string): void {
+    this.toastText.setText(message).setAlpha(1).setVisible(true);
+    this.tweens.add({
+      targets: this.toastText,
+      alpha: 0,
+      duration: 650,
+      delay: 1400,
+      onComplete: () => this.toastText.setVisible(false)
+    });
+  }
+
   private createDialogueBox(): void {
     const margin = 18;
     const panelWidth = GAME_WIDTH - margin * 2;
@@ -258,7 +338,7 @@ export class GameScene extends Phaser.Scene {
     const shadow = this.add.rectangle(5, 5, panelWidth, panelHeight, 0x000000, 0.45).setOrigin(0);
     const panel = this.add.rectangle(0, 0, panelWidth, panelHeight, 0x151827, 0.96).setOrigin(0);
     const border = this.add.rectangle(0, 0, panelWidth, panelHeight).setOrigin(0);
-    border.setStrokeStyle(2, 0xffe2a0, 1);
+    border.setStrokeStyle(2, 0xffd07a, 1);
 
     this.dialogueName = this.add.text(16, 10, '', {
       fontFamily: 'monospace',
@@ -299,7 +379,7 @@ export class GameScene extends Phaser.Scene {
     this.dialogueBox.setDepth(100);
     this.dialogueBox.setVisible(false);
 
-    this.dialogueUiObjects = [this.dialogueBox, ...dialogueObjects];
+    this.dialogueUiObjects = [this.dialogueBox, this.toastText, ...dialogueObjects];
   }
 
   private createUiCamera(): void {
@@ -315,7 +395,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createPlayer(): void {
-    this.player = this.physics.add.sprite(2.5 * TILE_SIZE, 2.5 * TILE_SIZE, 'hero-down');
+    const { x, y, direction } = gameState.snapshot.field;
+    this.lastDirection = direction;
+    this.player = this.physics.add.sprite(x, y, `hero-${this.lastDirection}`);
     this.player.setDepth(20);
     this.player.setCollideWorldBounds(true);
     this.player.body?.setSize(16, 18).setOffset(8, 12);
