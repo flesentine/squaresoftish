@@ -59,7 +59,7 @@ export class GameScene extends Phaser.Scene {
 
     this.cameras.main.setBounds(0, 0, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
-    this.cameras.main.setZoom(1.6);
+    this.cameras.main.setZoom(1);
     this.cameras.main.fadeIn(280, 12, 14, 24);
     this.createUiCamera();
 
@@ -215,17 +215,11 @@ export class GameScene extends Phaser.Scene {
 
   private updateInteractionPrompt(): void {
     const npc = this.getNearestNpc();
-    if (!npc) {
-      this.promptText
-        .setText('M: Menu  •  B: Test ATB battle')
-        .setPosition(this.player.x, this.player.y - 30)
-        .setVisible(true);
-      return;
-    }
+    const text = npc ? `E / Space: Talk to ${npc.name}` : 'M: Menu  •  B: Battle';
 
     this.promptText
-      .setText(`E / Space: Talk to ${npc.name}`)
-      .setPosition(npc.sprite.x, npc.sprite.y - 30)
+      .setText(text)
+      .setPosition(GAME_WIDTH / 2, GAME_HEIGHT - 16)
       .setVisible(true);
   }
 
@@ -297,7 +291,8 @@ export class GameScene extends Phaser.Scene {
         padding: { x: 5, y: 3 }
       })
       .setOrigin(0.5, 1)
-      .setDepth(50)
+      .setScrollFactor(0, 0)
+      .setDepth(120)
       .setVisible(false);
   }
 
@@ -379,7 +374,7 @@ export class GameScene extends Phaser.Scene {
     this.dialogueBox.setDepth(100);
     this.dialogueBox.setVisible(false);
 
-    this.dialogueUiObjects = [this.dialogueBox, this.toastText, ...dialogueObjects];
+    this.dialogueUiObjects = [this.dialogueBox, this.toastText, this.promptText, ...dialogueObjects];
   }
 
   private createUiCamera(): void {
