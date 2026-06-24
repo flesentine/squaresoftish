@@ -1,5 +1,26 @@
 import Phaser from 'phaser';
-import { gameConfig } from './config/gameConfig';
-import './styles.css';
+import './style.css';
+import { GameScene } from './scenes/GameScene';
 
-new Phaser.Game(gameConfig);
+const config: Phaser.Types.Core.GameConfig = {
+  type: Phaser.AUTO,
+  parent: 'game',
+  width: 640,
+  height: 360,
+  pixelArt: true,
+  backgroundColor: '#10141f',
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { x: 0, y: 0 },
+      debug: false
+    }
+  },
+  scene: [GameScene],
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  }
+};
+
+new Phaser.Game(config);

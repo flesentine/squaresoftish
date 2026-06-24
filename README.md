@@ -1,58 +1,46 @@
-# The Last Skywell — Phaser 3 + TypeScript Starter
+# Squaresoftish NPC Dialogue
 
-A runnable Phaser 3 + TypeScript + Vite project for a 1993-inspired science-fantasy JRPG prototype.
+A Phaser 3 + TypeScript top-down RPG prototype with:
 
-## Run it
+- WASD / arrow-key movement
+- Map loading from a simple tile array
+- Collision against tree/wall tiles
+- Camera follow
+- NPCs with collision bodies
+- Interaction prompt when the player gets close
+- Dialogue boxes with speaker names and multiple lines
+
+## Controls
+
+- Move: `WASD` or arrow keys
+- Talk / advance dialogue: `E`, `Space`, or `Enter`
+
+## Install and run
 
 ```bash
+nvm use 22 || true
 npm install
 npm run dev
 ```
 
-Open the local Vite URL, usually `http://localhost:5173`.
+Then open the local URL Vite prints in your terminal.
 
-## Build it
+## Build
 
 ```bash
 npm run build
-npm run preview
 ```
 
-## Controls
+## Files to look at
 
-- Move: Arrow keys or WASD
-- Interact / advance dialogue: E or Space
-- Menu: M or Escape
-- Battle command selection: Up / Down + Enter
+- `src/scenes/GameScene.ts` - player, collision, NPC interaction, dialogue UI
+- `src/game/map.ts` - tile map and tile size
+- `src/game/npcs.ts` - NPC positions and dialogue lines
 
-## What is included
+## Git push
 
-- Phaser 3 pinned to the Phaser 3 line: `3.90.0`
-- Vite + TypeScript setup
-- Scene structure:
-  - `BootScene`
-  - `TitleScene`
-  - `FieldScene`
-  - `BattleScene`
-  - `MenuScene`
-- Systems:
-  - Dialogue
-  - Save/load using browser localStorage
-  - Inventory helper
-  - Combat helper
-  - Flags helper
-  - Audio placeholder
-- JSON game data:
-  - Items
-  - Enemies
-  - Skills
-  - Dialogue
-- Placeholder procedural pixel textures, so it runs without external art files
-
-## Next build steps
-
-1. Replace procedural rectangles with real sprite sheets in `assets/sprites`.
-2. Add a Tiled or LDtk exported JSON map in `assets/maps`.
-3. Replace the hardcoded field layout in `FieldScene.ts` with map loading.
-4. Expand `BattleScene.ts` into the real ATB-lite system.
-5. Add Chapter 1 quest flags and map transitions.
+```bash
+git add .
+git commit -m "Add NPC interactions and dialogue boxes"
+git push origin main
+```
