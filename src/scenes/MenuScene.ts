@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
+import { CHAPTER1_STORY } from '../data/chapter1Story';
 import { audioManager } from '../systems/audio';
 import { gameState, type HeroId } from '../systems/gameState';
 import { saveManager, type SaveSlotSummary } from '../systems/save';
 
 const GAME_WIDTH = 640;
 const GAME_HEIGHT = 360;
-const TABS = ['Status', 'Items', 'Save/Load', 'Options'] as const;
+const TABS = ['Story', 'Status', 'Items', 'Save/Load', 'Options'] as const;
 
 type TabName = (typeof TABS)[number];
 type MenuMode = 'tabs' | 'items-target';
@@ -218,7 +219,7 @@ export class MenuScene extends Phaser.Scene {
     TABS.forEach((tab, index) => {
       const active = index === this.activeTabIndex;
       const prefix = active ? (this.focus === 'tabs' && this.mode === 'tabs' ? '▶ ' : '◆ ') : '  ';
-      const text = this.add.text(42, 84 + index * 28, `${prefix}${tab}`, {
+      const text = this.add.text(42, 80 + index * 25, `${prefix}${tab}`, {
         fontFamily: 'monospace',
         fontSize: '12px',
         color: active ? '#fff1ad' : '#d9e1ff'
@@ -227,7 +228,7 @@ export class MenuScene extends Phaser.Scene {
     });
 
     const state = gameState.snapshot;
-    const footer = this.add.text(42, 240, `Gold ${state.gold}G\nTime ${this.formatTime(state.field.playTimeSeconds)}\nMap  ${state.field.mapId}`, {
+    const footer = this.add.text(42, 242, `Gold ${state.gold}G\nTime ${this.formatTime(state.field.playTimeSeconds)}\nMap  ${state.field.mapId}`, {
       fontFamily: 'monospace',
       fontSize: '9px',
       color: '#b8c7e8',
@@ -244,6 +245,8 @@ export class MenuScene extends Phaser.Scene {
     const activeTab = TABS[this.activeTabIndex];
     if (this.mode === 'items-target') {
       this.renderItemTargetContent();
+    } else if (activeTab === 'Story') {
+      this.renderStoryContent();
     } else if (activeTab === 'Status') {
       this.renderStatusContent();
     } else if (activeTab === 'Items') {
@@ -256,6 +259,20 @@ export class MenuScene extends Phaser.Scene {
 
     this.helpText.setText(this.getHelpText());
     this.noticeText.setText(this.getNoticeText());
+  }
+
+  private renderStoryContent(): void {
+    this.addContentText(226, 82, CHAPTER1_STORY.title.toUpperCase(), '#ffe39b', 13);
+    this.addContentText(226, 102, CHAPTER1_STORY.subtitle, '#b8c7e8', 9);
+    this.addContentText(226, 124, `Now: ${CHAPTER1_STORY.currentObjective}`, '#fff7d6', 10);
+
+    this.options = CHAPTER1_STORY.beats.map((beat, index) => ({
+      label: `${index + 1}. ${beat}`,
+      hint: index === 0 ? CHAPTER1_STORY.synopsis : beat,
+      action: () => this.setNotice(beat)
+    }));
+
+    this.drawOptions(226, 156, 18, 360, 9);
   }
 
   private renderStatusContent(): void {
@@ -423,20 +440,20 @@ export class MenuScene extends Phaser.Scene {
     this.drawOptions(230, 114, 24);
   }
 
-  private drawOptions(x: number, y: number, rowHeight: number): void {
+  private drawOptions(x: number, y: number, rowHeight: number, width = 368, fontSize = 11): void {
     this.options.forEach((option, index) => {
       const selected = this.focus === 'content' && index === this.selectedIndex;
-      this.addContentText(x, y + index * rowHeight, `${selected ? '▶' : ' '} ${option.label}`, selected ? '#fff1ad' : '#d9e1ff', 11);
+      this.addContentText(x, y + index * rowHeight, `${selected ? '▶' : ' '} ${option.label}`, selected ? '#fff1ad' : '#d9e1ff', fontSize, width);
     });
   }
 
-  private addContentText(x: number, y: number, text: string, color: string, fontSize: number): Phaser.GameObjects.Text {
+  private addContentText(x: number, y: number, text: string, color: string, fontSize: number, width = 368): Phaser.GameObjects.Text {
     const textObject = this.add.text(x, y, text, {
       fontFamily: 'monospace',
       fontSize: `${fontSize}px`,
       color,
-      fixedWidth: 368,
-      wordWrap: { width: 368, useAdvancedWrap: true }
+      fixedWidth: width,
+      wordWrap: { width, useAdvancedWrap: true }
     });
     this.contentTexts.push(textObject);
     return textObject;
