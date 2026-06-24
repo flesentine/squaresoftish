@@ -4,6 +4,8 @@ type FieldSceneLike = Phaser.Scene & {
   areaId?: string;
   player?: Phaser.Physics.Arcade.Sprite;
   blockers?: Phaser.Physics.Arcade.StaticGroup;
+  actionLock?: boolean;
+  dialogueState?: unknown;
 };
 
 export function keepFieldUiReadable(scene: Phaser.Scene): void {
@@ -11,6 +13,9 @@ export function keepFieldUiReadable(scene: Phaser.Scene): void {
   camera.setZoom(1);
 
   const fieldScene = scene as FieldSceneLike;
+
+  fieldScene.actionLock = false;
+  fieldScene.dialogueState = null;
 
   if (fieldScene.areaId !== 'forest') return;
 
