@@ -9,6 +9,7 @@ const TABS = ['Status', 'Items', 'Save/Load', 'Options'] as const;
 
 type TabName = (typeof TABS)[number];
 type MenuMode = 'tabs' | 'items-target';
+type MenuFocus = 'tabs' | 'content';
 
 type MenuOption = {
   label: string;
@@ -29,6 +30,7 @@ export class MenuScene extends Phaser.Scene {
   private activeTabIndex = 0;
   private selectedIndex = 0;
   private mode: MenuMode = 'tabs';
+  private focus: MenuFocus = 'tabs';
   private itemUseId: string | null = null;
 
   private titleText!: Phaser.GameObjects.Text;
@@ -51,25 +53,29 @@ export class MenuScene extends Phaser.Scene {
   }
 
   update(): void {
-    if (Phaser.Input.Keyboard.JustDown(this.keyCancel) || Phaser.Input.Keyboard.JustDown(this.keyMenu)) {
+    if (Phaser.Input.Keyboard.JustDown(this.keyMenu)) {
       this.closeMenu();
       return;
     }
 
-    if (this.mode === 'tabs') {
-      if (Phaser.Input.Keyboard.JustDown(this.keyLeft)) this.changeTab(-1);
-      if (Phaser.Input.Keyboard.JustDown(this.keyRight)) this.changeTab(1);
+    if (Phaser.Input.Keyboard.JustDown(this.keyCancel)) {
+      this.handleCancel();
+      return;
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.keyUp)) this.moveSelection(-1);
-    if (Phaser.Input.Keyboard.JustDown(this.keyDown)) this.moveSelection(1);
+    if (Phaser.Input.Keyboard.JustDown(this.keyUp)) this.handleVerticalInput(-1);
+    if (Phaser.Input.Keyboard.JustDown(this.keyDown)) this.handleVerticalInput(1);
+
+    if (Phaser.Input.Keyboard.JustDown(this.keyRight) && this.mode === 'tabs' && this.focus === 'tabs') {
+      this.enterContent();
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.keyLeft) && this.mode === 'tabs' && this.focus === 'content') {
+      this.returnToTabs();
+    }
 
     if (this.didPressConfirm()) {
-      const option = this.options[this.selectedIndex];
-      if (option) {
-        audioManager.playSfx('confirm');
-        option.action();
-      }
+      this.confirmSelection();
     }
   }
 
@@ -104,16 +110,17 @@ export class MenuScene extends Phaser.Scene {
       color: '#ffe39b'
     });
 
-    this.add.text(466, 30, 'M / Esc: close', {
+    this.add.text(466, 30, 'M: close  •  Esc: back', {
       fontFamily: 'monospace',
       fontSize: '9px',
       color: '#98a7ca'
     });
 
-    this.helpText = this.add.text(34, 326, 'Arrow keys move  •  Enter/Space select', {
+    this.helpText = this.add.text(34, 326, '', {
       fontFamily: 'monospace',
       fontSize: '9px',
-      color: '#98a7ca'
+      color: '#98a7ca',
+      fixedWidth: 560
     });
 
     this.noticeText = this.add.text(210, 326, '', {
@@ -124,10 +131,69 @@ export class MenuScene extends Phaser.Scene {
     });
   }
 
+  private handleCancel(): void {
+    if (this.mode === 'items-target') {
+      audioManager.playSfx('cancel');
+      this.mode = 'tabs';
+      this.focus = 'content';
+      this.itemUseId = null;
+      this.activeTabIndex = TABS.indexOf('Items');
+      this.selectedIndex = 0;
+      this.render();
+      return;
+    }
+
+    if (this.focus === 'content') {
+      this.returnToTabs();
+      return;
+    }
+
+    this.closeMenu();
+  }
+
+  private handleVerticalInput(direction: number): void {
+    if (this.mode === 'items-target' || this.focus === 'content') {
+      this.moveSelection(direction);
+      return;
+    }
+
+    this.changeTab(direction);
+  }
+
+  private confirmSelection(): void {
+    if (this.mode === 'tabs' && this.focus === 'tabs') {
+      this.enterContent();
+      return;
+    }
+
+    const option = this.options[this.selectedIndex];
+    if (!option) return;
+
+    audioManager.playSfx('confirm');
+    option.action();
+  }
+
+  private enterContent(): void {
+    audioManager.playSfx('confirm');
+    this.focus = 'content';
+    this.selectedIndex = 0;
+    this.render();
+  }
+
+  private returnToTabs(): void {
+    audioManager.playSfx('cancel');
+    this.mode = 'tabs';
+    this.focus = 'tabs';
+    this.itemUseId = null;
+    this.selectedIndex = 0;
+    this.render();
+  }
+
   private changeTab(direction: number): void {
     audioManager.playSfx('menu');
     this.activeTabIndex = Phaser.Math.Wrap(this.activeTabIndex + direction, 0, TABS.length);
     this.mode = 'tabs';
+    this.focus = 'tabs';
     this.itemUseId = null;
     this.selectedIndex = 0;
     this.render();
@@ -150,8 +216,8 @@ export class MenuScene extends Phaser.Scene {
     this.tabTexts = [];
 
     TABS.forEach((tab, index) => {
-      const active = this.mode === 'tabs' && index === this.activeTabIndex;
-      const prefix = active ? '▶ ' : '  ';
+      const active = index === this.activeTabIndex;
+      const prefix = active ? (this.focus === 'tabs' && this.mode === 'tabs' ? '▶ ' : '◆ ') : '  ';
       const text = this.add.text(42, 84 + index * 28, `${prefix}${tab}`, {
         fontFamily: 'monospace',
         fontSize: '12px',
@@ -188,7 +254,8 @@ export class MenuScene extends Phaser.Scene {
       this.renderOptionsContent();
     }
 
-    this.noticeText.setText(this.options[this.selectedIndex]?.hint ?? '');
+    this.helpText.setText(this.getHelpText());
+    this.noticeText.setText(this.getNoticeText());
   }
 
   private renderStatusContent(): void {
@@ -205,7 +272,7 @@ export class MenuScene extends Phaser.Scene {
     this.options = [
       {
         label: 'Close status',
-        hint: 'Use Left/Right to switch menu tabs.',
+        hint: 'Press Enter to close the menu, or Esc/Left to return to the section list.',
         action: () => this.closeMenu()
       }
     ];
@@ -230,6 +297,7 @@ export class MenuScene extends Phaser.Scene {
         }
         this.itemUseId = item.id;
         this.mode = 'items-target';
+        this.focus = 'content';
         this.selectedIndex = 0;
         this.render();
       }
@@ -257,6 +325,7 @@ export class MenuScene extends Phaser.Scene {
 
         audioManager.playSfx('heal');
         this.mode = 'tabs';
+        this.focus = 'content';
         this.itemUseId = null;
         this.activeTabIndex = TABS.indexOf('Items');
         this.selectedIndex = 0;
@@ -356,7 +425,7 @@ export class MenuScene extends Phaser.Scene {
 
   private drawOptions(x: number, y: number, rowHeight: number): void {
     this.options.forEach((option, index) => {
-      const selected = index === this.selectedIndex;
+      const selected = this.focus === 'content' && index === this.selectedIndex;
       this.addContentText(x, y + index * rowHeight, `${selected ? '▶' : ' '} ${option.label}`, selected ? '#fff1ad' : '#d9e1ff', 11);
     });
   }
@@ -371,6 +440,18 @@ export class MenuScene extends Phaser.Scene {
     });
     this.contentTexts.push(textObject);
     return textObject;
+  }
+
+  private getHelpText(): string {
+    if (this.mode === 'items-target') return 'Up/Down choose hero  •  Enter use item  •  Esc back';
+    if (this.focus === 'tabs') return 'Up/Down choose section  •  Enter open section  •  M close';
+    return 'Up/Down choose command  •  Enter select  •  Left/Esc back  •  M close';
+  }
+
+  private getNoticeText(): string {
+    if (this.focus === 'tabs' && this.mode === 'tabs') return 'Choose a menu section.';
+    if (this.options.length === 0) return '';
+    return this.options[this.selectedIndex]?.hint ?? '';
   }
 
   private describeSave(summary: SaveSlotSummary): string {
