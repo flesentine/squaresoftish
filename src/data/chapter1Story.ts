@@ -3,8 +3,18 @@ export const CHAPTER1_STORY = {
   subtitle: 'Vael Festival → Skywell disaster → forest escape → cave shrine → first boss',
   synopsis:
     'Rowan arrives in Vael during the midsummer wind festival. Lyra performs a shrine song near the dormant Skywell, which awakens violently and damages the shrine district. Bronn, a former Helion engine-knight, opens an escape path. The three flee along Greenwood Road, reach a cave shrine, discover that a living navigation core has bound itself to Rowan, and defeat the Broken Weather Guardian before Helion troops arrive.',
-  currentObjective: 'Find Lyra near the dead Skywell shrine before the wind festival ceremony begins.',
+  currentObjective: 'Find Lyra near the dead Skywell shrine.',
   beats: [
+    'Vael wind festival',
+    'Lyra prepares the shrine-song',
+    'The dead Skywell wakes',
+    'Bronn opens the eastern escape path',
+    'Greenwood Road pursuit',
+    'Cave shrine: the core is alive',
+    'Broken Weather Guardian boss',
+    'Helion arrives too late'
+  ],
+  beatDetails: [
     'Rowan enters Vael during the midsummer wind festival and meets the townspeople.',
     'Lyra prepares a shrine-song at the dead Skywell while festival bells cover strange engine noises.',
     'The Skywell wakes, the shrine district shakes, and the festival turns into a disaster.',
