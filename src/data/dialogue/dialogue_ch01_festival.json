@@ -9,17 +9,22 @@
       {
         "speaker": "Elder Mira",
         "portrait": "elder_mira_neutral",
-        "text": "The old road is open again. That means trouble, or treasure. Usually both."
-      },
-      {
-        "speaker": "Elder Mira",
-        "portrait": "elder_mira_neutral",
-        "text": "Talk to everyone. Small towns hide big quests."
+        "text": "Rowan, you picked a loud day to arrive. Vael's midsummer wind festival only happens when the shrine bells still trust the sky."
       },
       {
         "speaker": "Elder Mira",
         "portrait": "elder_mira_concerned",
-        "text": "Come back after we add inventory and I might give you a key."
+        "text": "Lyra is preparing the shrine-song beside the dead Skywell. Dead, we call it. Old people know better."
+      },
+      {
+        "speaker": "Elder Mira",
+        "portrait": "elder_mira_concerned",
+        "text": "If the ground shakes, do not run west with the crowd. Find Bronn by the eastern road. He knows how Helion engines fail."
+      },
+      {
+        "speaker": "Elder Mira",
+        "portrait": "elder_mira_neutral",
+        "text": "Press M and open Story if you forget the thread: festival, Skywell disaster, forest road, cave shrine, Weather Guardian."
       }
     ]
   },
@@ -33,17 +38,22 @@
       {
         "speaker": "Guard Toma",
         "portrait": "guard_toma_neutral",
-        "text": "Hold it. Bandits were seen near the eastern trees."
-      },
-      {
-        "speaker": "Guard Toma",
-        "portrait": "guard_toma_neutral",
-        "text": "You can move with WASD or arrow keys. Press E or Space to talk."
+        "text": "Hold it. Eastern road is festival-closed until Lyra finishes the shrine-song. Official words. Bad feeling."
       },
       {
         "speaker": "Guard Toma",
         "portrait": "guard_toma_alert",
-        "text": "Very official guard advice: save before doing anything dumb."
+        "text": "I saw engine-wisps in Greenwood last night. Little blue things. Like lanterns with teeth."
+      },
+      {
+        "speaker": "Guard Toma",
+        "portrait": "guard_toma_neutral",
+        "text": "Bronn says the old Skywell is not a relic. He says it is a lock. I hate when grim men are specific."
+      },
+      {
+        "speaker": "Guard Toma",
+        "portrait": "guard_toma_alert",
+        "text": "Move with WASD or arrows. Press B to test battle. Press M to read the Chapter 1 story log."
       }
     ]
   },
@@ -57,17 +67,22 @@
       {
         "speaker": "Merchant Pip",
         "portrait": "merchant_pip_neutral",
-        "text": "Fresh potions! Invisible armor! Slightly haunted bread!"
+        "text": "Fresh potions for festival travelers! Sky tonics for people who ignore ominous shrine noises!"
       },
       {
         "speaker": "Merchant Pip",
         "portrait": "merchant_pip_smile",
-        "text": "Okay, none of that is implemented yet. But the dialogue box works."
+        "text": "Lyra's song is supposed to wake the festival lanterns, not the Skywell. Important distinction."
+      },
+      {
+        "speaker": "Merchant Pip",
+        "portrait": "merchant_pip_neutral",
+        "text": "If Vael starts falling apart, Greenwood Road leads to the cave shrine. Nobody buys snacks after a cave shrine, so stock up now."
       },
       {
         "speaker": "Merchant Pip",
         "portrait": "merchant_pip_smile",
-        "text": "Next upgrade should be shops or quests. That is where this starts feeling real."
+        "text": "Use items from the menu or in battle. You will want them before the Broken Weather Guardian."
       }
     ]
   }

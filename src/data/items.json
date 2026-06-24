@@ -6,5 +6,13 @@
     "healAmount": 55,
     "target": "ally",
     "description": "Restore 55 HP"
+  },
+  {
+    "id": "sky-tonic",
+    "name": "Sky Tonic",
+    "quantity": 1,
+    "healAmount": 110,
+    "target": "ally",
+    "description": "Restore 110 HP"
   }
 ]

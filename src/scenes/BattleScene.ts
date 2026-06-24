@@ -1,7 +1,5 @@
 import Phaser from 'phaser';
-import enemiesData from '../data/enemies.json';
-import itemsData from '../data/items.json';
-import skillsData from '../data/skills.json';
+import type { ChapterAreaId } from '../game/chapter1';
 
 const GAME_WIDTH = 640;
 const GAME_HEIGHT = 360;
@@ -9,17 +7,19 @@ const ATB_MAX = 100;
 const ATB_FILL_SCALE = 0.003;
 const COMMANDS = ['Attack', 'Skill', 'Item', 'Guard', 'Run'] as const;
 
-const HERO_SKILL_IDS: Record<string, string[]> = {
-  rowan: ['spark-thrust'],
-  lyra: ['mending-bell'],
-  bronn: ['guard-break']
-};
-
 type Team = 'party' | 'enemy';
 type BattleMode = 'none' | 'command' | 'skills' | 'items' | 'target-enemy' | 'target-ally' | 'result';
 type BattleOutcome = 'victory' | 'defeat' | 'escape';
 type SkillKind = 'damage' | 'heal' | 'guard-break';
 type TargetKind = 'enemy' | 'ally';
+
+type BattleSceneInitData = {
+  encounterId?: string;
+  returnAreaId?: ChapterAreaId;
+  returnSpawnId?: string;
+  winFlag?: string;
+  postBattleEvent?: string;
+};
 
 type Skill = {
   id: string;
@@ -50,9 +50,19 @@ type EnemyDefinition = {
   attack: number;
   defense: number;
   skillIds?: string[];
-  weakness?: string;
-  drops?: Array<{ itemId: string; chance: number }>;
-  actions?: string[];
+  boss?: boolean;
+  phaseLine?: string;
+};
+
+type EncounterDefinition = {
+  id: string;
+  title: string;
+  backdrop: 'forest' | 'cave' | 'shrine';
+  enemyIds: string[];
+  canRun: boolean;
+  openingLine: string;
+  victoryLine: string;
+  rewardLine: string;
 };
 
 type Combatant = {
@@ -67,8 +77,12 @@ type Combatant = {
   speed: number;
   attack: number;
   defense: number;
+  baseDefense: number;
   atb: number;
   guarding: boolean;
+  boss: boolean;
+  phaseTriggered: boolean;
+  phaseLine?: string;
   skills: Skill[];
   sprite: Phaser.GameObjects.Container | null;
 };
@@ -92,11 +106,146 @@ type CombatantUi = {
   atbBar?: BarUi;
 };
 
-const SKILLS = skillsData as Skill[];
-const ITEMS = itemsData as ItemStack[];
-const ENEMIES = enemiesData as EnemyDefinition[];
+const SKILLS: Skill[] = [
+  {
+    id: 'spark-thrust',
+    name: 'Spark Thrust',
+    mpCost: 4,
+    power: 22,
+    kind: 'damage',
+    target: 'enemy',
+    description: 'Rowan drives lightning through the spear tip.'
+  },
+  {
+    id: 'mending-bell',
+    name: 'Mending Bell',
+    mpCost: 5,
+    power: 44,
+    kind: 'heal',
+    target: 'ally',
+    description: 'Lyra rings a warm barrier tone.'
+  },
+  {
+    id: 'guard-break',
+    name: 'Guard Break',
+    mpCost: 3,
+    power: 18,
+    kind: 'guard-break',
+    target: 'enemy',
+    description: 'Bronn cracks armor and lowers defense.'
+  }
+];
+
+const HERO_SKILL_IDS: Record<string, string[]> = {
+  rowan: ['spark-thrust'],
+  lyra: ['mending-bell'],
+  bronn: ['guard-break']
+};
+
+const ITEMS: ItemStack[] = [
+  {
+    id: 'potion',
+    name: 'Potion',
+    quantity: 6,
+    healAmount: 48,
+    target: 'ally',
+    description: 'Restores a small chunk of HP.'
+  },
+  {
+    id: 'ether-drop',
+    name: 'Ether Drop',
+    quantity: 2,
+    healAmount: 26,
+    target: 'ally',
+    description: 'Prototype item: restores HP for now so Item stays simple.'
+  }
+];
+
+const ENEMIES: Record<string, EnemyDefinition> = {
+  engine_wisp: {
+    id: 'engine_wisp',
+    name: 'Engine Wisp',
+    textureKey: 'enemy-wisp',
+    maxHp: 74,
+    maxMp: 10,
+    speed: 9,
+    attack: 14,
+    defense: 3
+  },
+  clockwork_beetle: {
+    id: 'clockwork_beetle',
+    name: 'Clockwork Beetle',
+    textureKey: 'enemy-beetle',
+    maxHp: 96,
+    maxMp: 0,
+    speed: 6,
+    attack: 18,
+    defense: 7
+  },
+  gear_moth: {
+    id: 'gear_moth',
+    name: 'Gear Moth',
+    textureKey: 'enemy-moth',
+    maxHp: 62,
+    maxMp: 0,
+    speed: 11,
+    attack: 12,
+    defense: 2
+  },
+  broken_weather_guardian: {
+    id: 'broken_weather_guardian',
+    name: 'Broken Weather Guardian',
+    textureKey: 'enemy-guardian',
+    maxHp: 360,
+    maxMp: 20,
+    speed: 7,
+    attack: 23,
+    defense: 8,
+    boss: true,
+    phaseLine: 'The guardian opens its storm vanes. Broken rain begins to orbit the shrine.'
+  }
+};
+
+const ENCOUNTERS: Record<string, EncounterDefinition> = {
+  forest_escape: {
+    id: 'forest_escape',
+    title: 'Greenwood Ambush',
+    backdrop: 'forest',
+    enemyIds: ['engine_wisp', 'gear_moth'],
+    canRun: true,
+    openingLine: 'Engine-born scouts drift from the festival smoke. Wait mode is active.',
+    victoryLine: 'The road clears for a breath.',
+    rewardLine: '16 EXP  •  Potion found'
+  },
+  forest_escape_heavy: {
+    id: 'forest_escape_heavy',
+    title: 'Broken Patrol',
+    backdrop: 'forest',
+    enemyIds: ['clockwork_beetle', 'engine_wisp', 'gear_moth'],
+    canRun: true,
+    openingLine: 'A clockwork shell blocks the old service road.',
+    victoryLine: 'Bronn kicks the ruined shell into the brush.',
+    rewardLine: '24 EXP  •  18 G'
+  },
+  skywell_guardian: {
+    id: 'skywell_guardian',
+    title: 'First Boss - Weather Guardian',
+    backdrop: 'shrine',
+    enemyIds: ['broken_weather_guardian'],
+    canRun: false,
+    openingLine: 'The shrine guardian wakes wrong: half angel, half engine, all storm.',
+    victoryLine: 'The weather guardian falls silent and the cave wind exhales.',
+    rewardLine: '60 EXP  •  Core Map Fragment'
+  }
+};
 
 export class BattleScene extends Phaser.Scene {
+  private encounter: EncounterDefinition = ENCOUNTERS.forest_escape;
+  private returnAreaId: ChapterAreaId = 'forest';
+  private returnSpawnId = 'fromVael';
+  private winFlag: string | null = null;
+  private postBattleEvent: string | null = null;
+
   private party: Combatant[] = [];
   private enemies: Combatant[] = [];
   private items: ItemStack[] = [];
@@ -127,6 +276,14 @@ export class BattleScene extends Phaser.Scene {
     super('BattleScene');
   }
 
+  init(data: BattleSceneInitData): void {
+    this.encounter = ENCOUNTERS[data?.encounterId ?? 'forest_escape'] ?? ENCOUNTERS.forest_escape;
+    this.returnAreaId = data?.returnAreaId ?? 'forest';
+    this.returnSpawnId = data?.returnSpawnId ?? 'fromVael';
+    this.winFlag = data?.winFlag ?? null;
+    this.postBattleEvent = data?.postBattleEvent ?? null;
+  }
+
   create(): void {
     this.resetBattleState();
     this.createGeneratedTextures();
@@ -134,7 +291,7 @@ export class BattleScene extends Phaser.Scene {
     this.createCombatants();
     this.createControls();
     this.createBattleUi();
-    this.log('Engine wisps drift from the broken road. Wait mode is active.');
+    this.log(this.encounter.openingLine);
   }
 
   update(_time: number, delta: number): void {
@@ -160,12 +317,12 @@ export class BattleScene extends Phaser.Scene {
     this.menuTexts = [];
 
     this.party = [
-      this.makeCombatant('rowan', 'Rowan', 'party', 'battle-rowan', 148, 20, 16, 18, 5, this.getSkillsForHero('rowan')),
-      this.makeCombatant('lyra', 'Lyra', 'party', 'battle-lyra', 112, 34, 13, 10, 4, this.getSkillsForHero('lyra')),
-      this.makeCombatant('bronn', 'Bronn', 'party', 'battle-bronn', 182, 16, 10, 20, 8, this.getSkillsForHero('bronn'))
+      this.makeCombatant('rowan', 'Rowan', 'party', 'battle-rowan', 148, 20, 16, 18, 5, false, undefined, this.getSkillsForHero('rowan')),
+      this.makeCombatant('lyra', 'Lyra', 'party', 'battle-lyra', 112, 34, 13, 10, 4, false, undefined, this.getSkillsForHero('lyra')),
+      this.makeCombatant('bronn', 'Bronn', 'party', 'battle-bronn', 182, 16, 10, 20, 8, false, undefined, this.getSkillsForHero('bronn'))
     ];
 
-    this.enemies = ENEMIES.map((enemy) => this.makeEnemy(enemy));
+    this.enemies = this.encounter.enemyIds.map((enemyId) => this.makeEnemy(enemyId));
     this.items = ITEMS.map((item) => ({ ...item }));
   }
 
@@ -175,15 +332,13 @@ export class BattleScene extends Phaser.Scene {
 
   private getSkill(skillId: string): Skill {
     const skill = SKILLS.find((candidate) => candidate.id === skillId);
-    if (!skill) {
-      throw new Error(`Missing skill data for ${skillId}.`);
-    }
-
+    if (!skill) throw new Error(`Missing skill data for ${skillId}.`);
     return { ...skill };
   }
 
-  private makeEnemy(enemy: EnemyDefinition): Combatant {
-    const skills = (enemy.skillIds ?? []).map((skillId) => this.getSkill(skillId));
+  private makeEnemy(enemyId: string): Combatant {
+    const enemy = ENEMIES[enemyId];
+    if (!enemy) throw new Error(`Missing enemy data for ${enemyId}.`);
     return this.makeCombatant(
       enemy.id,
       enemy.name,
@@ -194,7 +349,9 @@ export class BattleScene extends Phaser.Scene {
       enemy.speed,
       enemy.attack,
       enemy.defense,
-      skills
+      enemy.boss ?? false,
+      enemy.phaseLine,
+      (enemy.skillIds ?? []).map((skillId) => this.getSkill(skillId))
     );
   }
 
@@ -208,6 +365,8 @@ export class BattleScene extends Phaser.Scene {
     speed: number,
     attack: number,
     defense: number,
+    boss: boolean,
+    phaseLine: string | undefined,
     skills: Skill[]
   ): Combatant {
     return {
@@ -222,8 +381,12 @@ export class BattleScene extends Phaser.Scene {
       speed,
       attack,
       defense,
-      atb: team === 'party' ? 18 : 0,
+      baseDefense: defense,
+      atb: team === 'party' ? 22 : 0,
       guarding: false,
+      boss,
+      phaseTriggered: false,
+      phaseLine,
       skills,
       sprite: null
     };
@@ -231,10 +394,7 @@ export class BattleScene extends Phaser.Scene {
 
   private createControls(): void {
     const keyboard = this.input.keyboard;
-    if (!keyboard) {
-      throw new Error('Keyboard input is unavailable.');
-    }
-
+    if (!keyboard) throw new Error('Keyboard input is unavailable.');
     this.keyUp = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.UP);
     this.keyDown = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.DOWN);
     this.keyLeft = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.LEFT);
@@ -247,15 +407,30 @@ export class BattleScene extends Phaser.Scene {
   private createBattlefield(): void {
     this.cameras.main.setBackgroundColor('#101420');
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x101420, 1).setOrigin(0);
-    this.add.rectangle(0, 0, GAME_WIDTH, 220, 0x172031, 1).setOrigin(0);
-    this.add.rectangle(0, 208, GAME_WIDTH, 28, 0x23213a, 1).setOrigin(0);
-    this.add.rectangle(0, 232, GAME_WIDTH, GAME_HEIGHT - 232, 0x0b0d16, 1).setOrigin(0);
 
-    for (let i = 0; i < 9; i += 1) {
-      this.add.rectangle(60 + i * 68, 206 + (i % 2) * 3, 52, 3, 0x38435f, 0.8).setOrigin(0.5);
+    if (this.encounter.backdrop === 'forest') {
+      this.add.rectangle(0, 0, GAME_WIDTH, 220, 0x182c25, 1).setOrigin(0);
+      this.add.rectangle(0, 185, GAME_WIDTH, 48, 0x395438, 1).setOrigin(0);
+      for (let i = 0; i < 9; i += 1) {
+        this.add.triangle(36 + i * 74, 184, 0, 54, 28, 0, 56, 54, 0x1d5a38, 1).setDepth(1);
+      }
+    } else if (this.encounter.backdrop === 'shrine') {
+      this.add.rectangle(0, 0, GAME_WIDTH, 220, 0x151a2b, 1).setOrigin(0);
+      this.add.circle(320, 98, 76, 0x243957, 0.8);
+      this.add.circle(320, 98, 46, 0x78d8ff, 0.15);
+      this.add.rectangle(0, 198, GAME_WIDTH, 36, 0x3c3449, 1).setOrigin(0);
+      this.add.text(214, 16, 'CAVE SHRINE - BROKEN WEATHER ENGINE', {
+        fontFamily: 'monospace',
+        fontSize: '10px',
+        color: '#b9dcff'
+      });
+    } else {
+      this.add.rectangle(0, 0, GAME_WIDTH, 220, 0x202535, 1).setOrigin(0);
+      this.add.rectangle(0, 198, GAME_WIDTH, 36, 0x343a4c, 1).setOrigin(0);
     }
 
-    this.add.text(18, 10, 'ATB-LITE BATTLE  •  WAIT MODE', {
+    this.add.rectangle(0, 232, GAME_WIDTH, GAME_HEIGHT - 232, 0x0b0d16, 1).setOrigin(0);
+    this.add.text(18, 10, `${this.encounter.title.toUpperCase()}  •  ATB WAIT MODE`, {
       fontFamily: 'monospace',
       fontSize: '11px',
       color: '#ffe6a6'
@@ -269,12 +444,14 @@ export class BattleScene extends Phaser.Scene {
       { x: 154, y: 182 }
     ];
 
-    const enemyPositions = [
-      { x: 470, y: 94 },
-      { x: 504, y: 160 },
-      { x: 456, y: 184 },
-      { x: 526, y: 70 }
-    ];
+    const enemyPositions = this.enemies.length === 1
+      ? [{ x: 472, y: 132 }]
+      : [
+          { x: 470, y: 94 },
+          { x: 506, y: 160 },
+          { x: 450, y: 184 },
+          { x: 526, y: 70 }
+        ];
 
     this.party.forEach((hero, index) => {
       const position = heroPositions[index] ?? { x: 140, y: 80 + index * 48 };
@@ -288,17 +465,16 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private createActorSprite(combatant: Combatant, x: number, y: number, flipX: boolean): Phaser.GameObjects.Container {
-    const shadow = this.add.ellipse(0, 28, combatant.team === 'enemy' ? 54 : 42, 10, 0x000000, 0.34);
-    const sprite = this.add.image(0, 0, combatant.textureKey).setScale(combatant.team === 'enemy' ? 1.2 : 1.35);
+    const shadowWidth = combatant.boss ? 104 : combatant.team === 'enemy' ? 54 : 42;
+    const shadow = this.add.ellipse(0, combatant.boss ? 44 : 28, shadowWidth, 12, 0x000000, 0.34);
+    const sprite = this.add.image(0, 0, combatant.textureKey).setScale(combatant.boss ? 1.32 : combatant.team === 'enemy' ? 1.2 : 1.35);
     sprite.setFlipX(flipX);
 
-    const name = this.add
-      .text(0, 34, combatant.name, {
-        fontFamily: 'monospace',
-        fontSize: '9px',
-        color: combatant.team === 'enemy' ? '#ffd0d0' : '#dcecff'
-      })
-      .setOrigin(0.5, 0);
+    const name = this.add.text(0, combatant.boss ? 54 : 34, combatant.name, {
+      fontFamily: 'monospace',
+      fontSize: combatant.boss ? '10px' : '9px',
+      color: combatant.team === 'enemy' ? '#ffd0d0' : '#dcecff'
+    }).setOrigin(0.5, 0);
 
     const container = this.add.container(x, y, [shadow, sprite, name]);
     container.setDepth(combatant.team === 'enemy' ? 12 : 15);
@@ -316,7 +492,6 @@ export class BattleScene extends Phaser.Scene {
 
     this.add.rectangle(16, 244, 394, 98, 0x141827, 0.96).setOrigin(0);
     this.add.rectangle(16, 244, 394, 98).setOrigin(0).setStrokeStyle(2, 0xffd07a, 1);
-
     this.party.forEach((hero, index) => this.createHeroStatusRow(hero, 28, 254 + index * 28));
     this.enemies.forEach((enemy) => this.createEnemyStatus(enemy));
 
@@ -334,18 +509,14 @@ export class BattleScene extends Phaser.Scene {
       color: '#ffe37a'
     }).setVisible(false);
 
-    this.resultText = this.add
-      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 32, '', {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        color: '#fff2bd',
-        align: 'center',
-        backgroundColor: '#111525dd',
-        padding: { x: 18, y: 12 }
-      })
-      .setOrigin(0.5)
-      .setDepth(100)
-      .setVisible(false);
+    this.resultText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 32, '', {
+      fontFamily: 'monospace',
+      fontSize: '18px',
+      color: '#fff2bd',
+      align: 'center',
+      backgroundColor: '#111525dd',
+      padding: { x: 18, y: 12 }
+    }).setOrigin(0.5).setDepth(100).setVisible(false);
 
     this.renderMenu();
     this.updateAllUi();
@@ -385,17 +556,16 @@ export class BattleScene extends Phaser.Scene {
 
   private createEnemyStatus(enemy: Combatant): void {
     if (!enemy.sprite) return;
+    const yOffset = enemy.boss ? -66 : -46;
+    const barWidth = enemy.boss ? 112 : 68;
+    const hpText = this.add.text(enemy.sprite.x, enemy.sprite.y + yOffset, '', {
+      fontFamily: 'monospace',
+      fontSize: '9px',
+      color: '#ffd8d8'
+    }).setOrigin(0.5, 0.5);
 
-    const hpText = this.add
-      .text(enemy.sprite.x, enemy.sprite.y - 46, '', {
-        fontFamily: 'monospace',
-        fontSize: '9px',
-        color: '#ffd8d8'
-      })
-      .setOrigin(0.5, 0.5);
-
-    const hpBar = this.createBar(enemy.sprite.x - 34, enemy.sprite.y - 32, 68, 5, 0xd95151);
-    const stateText = this.add.text(enemy.sprite.x + 40, enemy.sprite.y - 39, '', {
+    const hpBar = this.createBar(enemy.sprite.x - barWidth / 2, enemy.sprite.y + yOffset + 12, barWidth, 5, 0xd95151);
+    const stateText = this.add.text(enemy.sprite.x + barWidth / 2 + 6, enemy.sprite.y + yOffset + 4, '', {
       fontFamily: 'monospace',
       fontSize: '9px',
       color: '#ffe6a6'
@@ -416,7 +586,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (this.outcome) {
       if (this.didPressConfirm() || Phaser.Input.Keyboard.JustDown(this.keyCancel)) {
-        this.scene.start('GameScene');
+        this.returnToField();
       }
       return;
     }
@@ -431,13 +601,8 @@ export class BattleScene extends Phaser.Scene {
       this.moveSelection(1);
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.keyCancel)) {
-      this.cancelMenu();
-    }
-
-    if (this.didPressConfirm()) {
-      this.confirmSelection();
-    }
+    if (Phaser.Input.Keyboard.JustDown(this.keyCancel)) this.cancelMenu();
+    if (this.didPressConfirm()) this.confirmSelection();
   }
 
   private didPressConfirm(): boolean {
@@ -447,7 +612,6 @@ export class BattleScene extends Phaser.Scene {
   private moveSelection(direction: number): void {
     const options = this.getCurrentMenuOptions();
     if (options.length === 0) return;
-
     this.selectedIndex = Phaser.Math.Wrap(this.selectedIndex + direction, 0, options.length);
     this.renderMenu();
     this.updateTargetMarker();
@@ -460,13 +624,9 @@ export class BattleScene extends Phaser.Scene {
     }
 
     if (this.mode === 'target-enemy' || this.mode === 'target-ally') {
-      if (this.pendingAction?.kind === 'skill') {
-        this.setMode('skills');
-      } else if (this.pendingAction?.kind === 'item') {
-        this.setMode('items');
-      } else {
-        this.setMode('command');
-      }
+      if (this.pendingAction?.kind === 'skill') this.setMode('skills');
+      else if (this.pendingAction?.kind === 'item') this.setMode('items');
+      else this.setMode('command');
     }
   }
 
@@ -481,12 +641,10 @@ export class BattleScene extends Phaser.Scene {
     if (this.mode === 'skills') {
       const skill = this.currentHero.skills[this.selectedIndex];
       if (!skill) return;
-
       if (this.currentHero.mp < skill.mpCost) {
         this.log(`${this.currentHero.name} needs ${skill.mpCost} MP.`);
         return;
       }
-
       this.pendingAction = { kind: 'skill', skill };
       this.setMode(skill.target === 'enemy' ? 'target-enemy' : 'target-ally');
       return;
@@ -496,20 +654,16 @@ export class BattleScene extends Phaser.Scene {
       const usableItems = this.items.filter((item) => item.quantity > 0);
       const item = usableItems[this.selectedIndex];
       if (!item) return;
-
       this.pendingAction = { kind: 'item', item };
       this.setMode(item.target === 'enemy' ? 'target-enemy' : 'target-ally');
       return;
     }
 
-    if (this.mode === 'target-enemy' || this.mode === 'target-ally') {
-      this.confirmTarget();
-    }
+    if (this.mode === 'target-enemy' || this.mode === 'target-ally') this.confirmTarget();
   }
 
   private confirmCommand(): void {
     const command = COMMANDS[this.selectedIndex];
-
     if (command === 'Attack') {
       this.pendingAction = { kind: 'attack' };
       this.setMode('target-enemy');
@@ -521,7 +675,6 @@ export class BattleScene extends Phaser.Scene {
         this.log('No skills ready.');
         return;
       }
-
       this.setMode('skills');
       return;
     }
@@ -531,7 +684,6 @@ export class BattleScene extends Phaser.Scene {
         this.log('No usable items.');
         return;
       }
-
       this.setMode('items');
       return;
     }
@@ -541,25 +693,18 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    if (command === 'Run') {
-      this.executeRun();
-    }
+    if (command === 'Run') this.executeRun();
   }
 
   private confirmTarget(): void {
     if (!this.currentHero || !this.pendingAction) return;
-
     const targets = this.mode === 'target-enemy' ? this.getLivingEnemies() : this.getLivingParty();
     const target = targets[this.selectedIndex];
     if (!target) return;
 
-    if (this.pendingAction.kind === 'attack') {
-      this.executeAttack(this.currentHero, target);
-    } else if (this.pendingAction.kind === 'skill') {
-      this.executeSkill(this.currentHero, target, this.pendingAction.skill);
-    } else {
-      this.executeItem(this.currentHero, target, this.pendingAction.item);
-    }
+    if (this.pendingAction.kind === 'attack') this.executeAttack(this.currentHero, target);
+    else if (this.pendingAction.kind === 'skill') this.executeSkill(this.currentHero, target, this.pendingAction.skill);
+    else this.executeItem(this.currentHero, target, this.pendingAction.item);
   }
 
   private setMode(mode: BattleMode): void {
@@ -570,27 +715,17 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private getCurrentMenuOptions(): string[] {
-    if (this.mode === 'command') {
-      return [...COMMANDS];
-    }
-
-    if (this.mode === 'skills') {
-      return (this.currentHero?.skills ?? []).map((skill) => `${skill.name} ${skill.mpCost}MP`);
-    }
-
-    if (this.mode === 'items') {
-      return this.items.filter((item) => item.quantity > 0).map((item) => `${item.name} x${item.quantity}`);
-    }
-
-    if (this.mode === 'target-enemy') {
-      return this.getLivingEnemies().map((enemy) => `${enemy.name} ${enemy.hp}/${enemy.maxHp}`);
-    }
-
-    if (this.mode === 'target-ally') {
-      return this.getLivingParty().map((hero) => `${hero.name} ${hero.hp}/${hero.maxHp}`);
-    }
-
+    if (this.mode === 'command') return this.getCommandOptions();
+    if (this.mode === 'skills') return (this.currentHero?.skills ?? []).map((skill) => `${skill.name} ${skill.mpCost}MP`);
+    if (this.mode === 'items') return this.items.filter((item) => item.quantity > 0).map((item) => `${item.name} x${item.quantity}`);
+    if (this.mode === 'target-enemy') return this.getLivingEnemies().map((enemy) => `${enemy.name} ${enemy.hp}/${enemy.maxHp}`);
+    if (this.mode === 'target-ally') return this.getLivingParty().map((hero) => `${hero.name} ${hero.hp}/${hero.maxHp}`);
     return [];
+  }
+
+  private getCommandOptions(): string[] {
+    if (this.encounter.canRun) return [...COMMANDS];
+    return COMMANDS.map((command) => (command === 'Run' ? 'Run (blocked)' : command));
   }
 
   private getMenuTitle(): string {
@@ -605,12 +740,10 @@ export class BattleScene extends Phaser.Scene {
   private renderMenu(): void {
     this.menuTexts.forEach((text) => text.destroy());
     this.menuTexts = [];
-
     const options = this.getCurrentMenuOptions();
     const visible = this.mode !== 'none' && this.mode !== 'result';
     this.commandPanel?.setVisible(visible);
     this.commandTitle?.setVisible(visible).setText(this.getMenuTitle());
-
     if (!visible) return;
 
     options.forEach((option, index) => {
@@ -622,12 +755,11 @@ export class BattleScene extends Phaser.Scene {
       this.menuTexts.push(text);
     });
 
-    const hint = this.add.text(444, 328, 'Enter/Space OK  Esc Back', {
+    this.menuTexts.push(this.add.text(444, 328, 'Enter/Space OK  Esc Back', {
       fontFamily: 'monospace',
       fontSize: '8px',
       color: '#8ea0c7'
-    });
-    this.menuTexts.push(hint);
+    }));
   }
 
   private isPausedForWaitMode(): boolean {
@@ -635,22 +767,16 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private fillAtb(delta: number): void {
-    for (const hero of this.party) {
-      if (this.isAlive(hero) && hero.atb < ATB_MAX) {
-        hero.atb = Phaser.Math.Clamp(hero.atb + hero.speed * delta * ATB_FILL_SCALE, 0, ATB_MAX);
-      }
-    }
-
-    for (const enemy of this.enemies) {
-      if (this.isAlive(enemy) && enemy.atb < ATB_MAX) {
-        enemy.atb = Phaser.Math.Clamp(enemy.atb + enemy.speed * delta * ATB_FILL_SCALE, 0, ATB_MAX);
+    for (const combatant of [...this.party, ...this.enemies]) {
+      if (this.isAlive(combatant) && combatant.atb < ATB_MAX) {
+        const phaseBonus = combatant.boss && combatant.phaseTriggered ? 1.35 : 1;
+        combatant.atb = Phaser.Math.Clamp(combatant.atb + combatant.speed * phaseBonus * delta * ATB_FILL_SCALE, 0, ATB_MAX);
       }
     }
   }
 
   private resolveReadyTurn(): void {
     if (this.currentHero || this.actionInProgress || this.outcome) return;
-
     const readyHero = this.party.find((hero) => this.isAlive(hero) && hero.atb >= ATB_MAX);
     if (readyHero) {
       this.promptHeroCommand(readyHero);
@@ -658,9 +784,7 @@ export class BattleScene extends Phaser.Scene {
     }
 
     const readyEnemy = this.enemies.find((enemy) => this.isAlive(enemy) && enemy.atb >= ATB_MAX);
-    if (readyEnemy) {
-      this.executeEnemyTurn(readyEnemy);
-    }
+    if (readyEnemy) this.executeEnemyTurn(readyEnemy);
   }
 
   private promptHeroCommand(hero: Combatant): void {
@@ -734,7 +858,6 @@ export class BattleScene extends Phaser.Scene {
 
   private executeGuard(): void {
     if (!this.currentHero) return;
-
     this.beginAction();
     this.currentHero.guarding = true;
     this.log(`${this.currentHero.name} guards.`);
@@ -744,14 +867,17 @@ export class BattleScene extends Phaser.Scene {
 
   private executeRun(): void {
     if (!this.currentHero) return;
+    if (!this.encounter.canRun) {
+      this.log('No escape from a guardian protocol.');
+      return;
+    }
 
     this.beginAction();
-    const success = Phaser.Math.Between(1, 100) <= 55;
+    const success = Phaser.Math.Between(1, 100) <= 62;
     this.log(`${this.currentHero.name} looks for an opening...`);
     this.time.delayedCall(420, () => {
-      if (success) {
-        this.setOutcome('escape', 'ESCAPE!\nPress Enter to return to the field.');
-      } else {
+      if (success) this.setOutcome('escape', 'ESCAPE!\nPress Enter to return to the field.');
+      else {
         this.log('No escape!');
         this.finishHeroAction();
       }
@@ -761,10 +887,15 @@ export class BattleScene extends Phaser.Scene {
   private executeEnemyTurn(enemy: Combatant): void {
     this.actionInProgress = true;
     enemy.atb = 0;
-
-    const target = this.pickRandom(this.getLivingParty());
+    const livingParty = this.getLivingParty();
+    const target = this.pickRandom(livingParty);
     if (!target) {
       this.checkBattleEnd();
+      return;
+    }
+
+    if (enemy.boss && enemy.phaseTriggered && Phaser.Math.Between(1, 100) <= 35) {
+      this.executeBossStorm(enemy, livingParty);
       return;
     }
 
@@ -780,6 +911,23 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  private executeBossStorm(enemy: Combatant, targets: Combatant[]): void {
+    this.log(`${enemy.name} releases broken rain!`);
+    this.cameras.main.shake(320, 0.007);
+    this.flashActor(enemy, 0x8fe8ff);
+    this.time.delayedCall(280, () => {
+      targets.forEach((target) => {
+        const damage = this.calculateDamage(enemy, target, Math.floor(enemy.attack * 0.78) + Phaser.Math.Between(0, 4));
+        this.applyDamage(target, damage);
+        this.flashActor(target, 0x8fe8ff);
+      });
+      this.time.delayedCall(520, () => {
+        this.actionInProgress = false;
+        this.checkBattleEnd();
+      });
+    });
+  }
+
   private beginAction(): void {
     this.actionInProgress = true;
     this.setMode('none');
@@ -787,10 +935,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private finishHeroAction(): void {
-    if (this.currentHero) {
-      this.currentHero.atb = 0;
-    }
-
+    if (this.currentHero) this.currentHero.atb = 0;
     this.currentHero = null;
     this.pendingAction = null;
     this.actionInProgress = false;
@@ -800,7 +945,8 @@ export class BattleScene extends Phaser.Scene {
 
   private calculateDamage(attacker: Combatant, target: Combatant, rawPower: number): number {
     const teamBonus = attacker.team === 'party' ? 1 : 0;
-    const mitigated = Math.max(1, rawPower - Math.floor(target.defense / 2) + teamBonus);
+    const bossPhaseBonus = attacker.boss && attacker.phaseTriggered ? 4 : 0;
+    const mitigated = Math.max(1, rawPower + bossPhaseBonus - Math.floor(target.defense / 2) + teamBonus);
     return Math.max(1, mitigated);
   }
 
@@ -815,6 +961,10 @@ export class BattleScene extends Phaser.Scene {
     target.hp = Phaser.Math.Clamp(target.hp - finalAmount, 0, target.maxHp);
     this.spawnNumber(target, `-${finalAmount}`, '#ffded6');
 
+    if (target.boss && !target.phaseTriggered && target.hp > 0 && target.hp <= target.maxHp / 2) {
+      this.triggerBossPhase(target);
+    }
+
     if (target.hp <= 0) {
       this.log(`${target.name} falls.`);
       target.atb = 0;
@@ -823,18 +973,25 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  private triggerBossPhase(boss: Combatant): void {
+    boss.phaseTriggered = true;
+    boss.attack += 5;
+    boss.defense = Math.max(boss.baseDefense, boss.defense + 2);
+    this.cameras.main.shake(520, 0.01);
+    this.flashActor(boss, 0xffe37a);
+    this.log(boss.phaseLine ?? `${boss.name} changes phase!`);
+  }
+
   private applyHealing(target: Combatant, amount: number): void {
     const before = target.hp;
     target.hp = Phaser.Math.Clamp(target.hp + amount, 0, target.maxHp);
-    const healed = target.hp - before;
-    this.spawnNumber(target, `+${healed}`, '#c8ffd8');
+    this.spawnNumber(target, `+${target.hp - before}`, '#c8ffd8');
   }
 
   private checkBattleEnd(): void {
     if (this.outcome) return;
-
     if (this.getLivingEnemies().length === 0) {
-      this.setOutcome('victory', 'VICTORY!\n18 EXP  •  12 G\nPress Enter to return to the field.');
+      this.setOutcome('victory', `VICTORY!\n${this.encounter.rewardLine}\n${this.encounter.victoryLine}\nPress Enter to return.`);
       return;
     }
 
@@ -855,11 +1012,25 @@ export class BattleScene extends Phaser.Scene {
     this.resultText.setText(message).setVisible(true);
   }
 
+  private returnToField(): void {
+    if (this.outcome === 'victory' && this.winFlag) {
+      const flags = new Set<string>(this.registry.get('chapter1.flags') ?? []);
+      flags.add(this.winFlag);
+      this.registry.set('chapter1.flags', [...flags]);
+    }
+
+    this.scene.start('GameScene', {
+      areaId: this.returnAreaId,
+      spawnId: this.returnSpawnId,
+      postBattleEvent: this.outcome === 'victory' ? this.postBattleEvent ?? undefined : undefined,
+      battleResult: this.outcome
+    });
+  }
+
   private updateAllUi(): void {
     for (const hero of this.party) {
       const ui = this.actorUi.get(hero.id);
       if (!ui) continue;
-
       ui.hpText.setText(`HP ${hero.hp}/${hero.maxHp}`);
       ui.mpText?.setText(`MP ${hero.mp}/${hero.maxMp}`);
       ui.stateText.setText(hero.guarding ? 'GUARD' : hero.atb >= ATB_MAX && this.isAlive(hero) ? 'READY' : '');
@@ -871,9 +1042,8 @@ export class BattleScene extends Phaser.Scene {
     for (const enemy of this.enemies) {
       const ui = this.actorUi.get(enemy.id);
       if (!ui) continue;
-
       ui.hpText.setText(`${enemy.hp}/${enemy.maxHp}`);
-      ui.stateText.setText(!this.isAlive(enemy) ? 'KO' : enemy.atb >= ATB_MAX ? '!' : '');
+      ui.stateText.setText(!this.isAlive(enemy) ? 'KO' : enemy.phaseTriggered ? 'PHASE 2' : enemy.atb >= ATB_MAX ? '!' : '');
       this.setBarValue(ui.hpBar, enemy.hp, enemy.maxHp);
     }
   }
@@ -896,7 +1066,7 @@ export class BattleScene extends Phaser.Scene {
       return;
     }
 
-    this.targetMarker.setPosition(target.sprite.x - 48, target.sprite.y - 14).setVisible(true);
+    this.targetMarker.setPosition(target.sprite.x - (target.boss ? 78 : 48), target.sprite.y - 14).setVisible(true);
   }
 
   private log(message: string): void {
@@ -905,17 +1075,13 @@ export class BattleScene extends Phaser.Scene {
 
   private spawnNumber(target: Combatant, text: string, color: string): void {
     if (!target.sprite) return;
-
-    const numberText = this.add
-      .text(target.sprite.x, target.sprite.y - 32, text, {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color,
-        stroke: '#101018',
-        strokeThickness: 3
-      })
-      .setOrigin(0.5)
-      .setDepth(80);
+    const numberText = this.add.text(target.sprite.x, target.sprite.y - 32, text, {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color,
+      stroke: '#101018',
+      strokeThickness: 3
+    }).setOrigin(0.5).setDepth(80);
 
     this.tweens.add({
       targets: numberText,
@@ -933,22 +1099,12 @@ export class BattleScene extends Phaser.Scene {
     }
 
     const direction = actor.team === 'party' ? 12 : -12;
-    this.tweens.add({
-      targets: actor.sprite,
-      x: actor.sprite.x + direction,
-      duration: 90,
-      yoyo: true,
-      onComplete
-    });
+    this.tweens.add({ targets: actor.sprite, x: actor.sprite.x + direction, duration: 90, yoyo: true, onComplete });
   }
 
   private flashActor(actor: Combatant, tint: number): void {
     if (!actor.sprite) return;
-
-    const images = actor.sprite.list.filter(
-      (child): child is Phaser.GameObjects.Image => child instanceof Phaser.GameObjects.Image
-    );
-
+    const images = actor.sprite.list.filter((child): child is Phaser.GameObjects.Image => child instanceof Phaser.GameObjects.Image);
     images.forEach((image) => image.setTint(tint));
     this.time.delayedCall(160, () => images.forEach((image) => image.clearTint()));
   }
@@ -976,11 +1132,12 @@ export class BattleScene extends Phaser.Scene {
     this.createHeroTexture('battle-bronn', 0x768596, 0xd2a85c, 0xffd3ad);
     this.createWispTexture();
     this.createBeetleTexture();
+    this.createMothTexture();
+    this.createGuardianTexture();
   }
 
   private createHeroTexture(key: string, bodyColor: number, accentColor: number, faceColor: number): void {
     if (this.textures.exists(key)) return;
-
     const g = this.make.graphics({ x: 0, y: 0 }, false);
     g.fillStyle(0x000000, 0.25);
     g.fillEllipse(24, 42, 30, 8);
@@ -1004,7 +1161,6 @@ export class BattleScene extends Phaser.Scene {
 
   private createWispTexture(): void {
     if (this.textures.exists('enemy-wisp')) return;
-
     const g = this.make.graphics({ x: 0, y: 0 }, false);
     g.fillStyle(0x000000, 0.25);
     g.fillEllipse(32, 56, 44, 10);
@@ -1025,7 +1181,6 @@ export class BattleScene extends Phaser.Scene {
 
   private createBeetleTexture(): void {
     if (this.textures.exists('enemy-beetle')) return;
-
     const g = this.make.graphics({ x: 0, y: 0 }, false);
     g.fillStyle(0x000000, 0.25);
     g.fillEllipse(32, 56, 48, 9);
@@ -1043,6 +1198,49 @@ export class BattleScene extends Phaser.Scene {
     g.fillCircle(25, 25, 3);
     g.fillCircle(39, 25, 3);
     g.generateTexture('enemy-beetle', 64, 64);
+    g.destroy();
+  }
+
+  private createMothTexture(): void {
+    if (this.textures.exists('enemy-moth')) return;
+    const g = this.make.graphics({ x: 0, y: 0 }, false);
+    g.fillStyle(0x000000, 0.24);
+    g.fillEllipse(32, 56, 42, 8);
+    g.fillStyle(0x7860a8, 1);
+    g.fillTriangle(31, 28, 8, 16, 16, 46);
+    g.fillTriangle(33, 28, 56, 16, 48, 46);
+    g.fillStyle(0xb9dcff, 1);
+    g.fillRoundedRect(26, 20, 12, 24, 6);
+    g.fillStyle(0xff756b, 1);
+    g.fillCircle(29, 27, 2);
+    g.fillCircle(35, 27, 2);
+    g.generateTexture('enemy-moth', 64, 64);
+    g.destroy();
+  }
+
+  private createGuardianTexture(): void {
+    if (this.textures.exists('enemy-guardian')) return;
+    const g = this.make.graphics({ x: 0, y: 0 }, false);
+    g.fillStyle(0x000000, 0.25);
+    g.fillEllipse(64, 104, 92, 14);
+    g.fillStyle(0x43536f, 1);
+    g.fillRoundedRect(42, 30, 44, 48, 10);
+    g.fillStyle(0xc6a15a, 1);
+    g.fillCircle(64, 50, 20);
+    g.fillStyle(0x8ce8ff, 1);
+    g.fillCircle(64, 50, 9);
+    g.fillStyle(0x26324a, 1);
+    g.fillRect(55, 74, 18, 24);
+    g.fillStyle(0x9e8a57, 1);
+    g.fillTriangle(42, 34, 7, 14, 28, 64);
+    g.fillTriangle(86, 34, 121, 14, 100, 64);
+    g.fillStyle(0xb9dcff, 1);
+    g.fillRect(31, 23, 8, 34);
+    g.fillRect(90, 23, 8, 34);
+    g.fillStyle(0xffe37a, 1);
+    g.fillRect(60, 6, 8, 22);
+    g.fillRect(53, 13, 22, 6);
+    g.generateTexture('enemy-guardian', 128, 112);
     g.destroy();
   }
 }
