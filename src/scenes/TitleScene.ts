@@ -23,6 +23,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
+    audioManager.playMusic('title');
     this.createControls();
     this.createBackdrop();
     this.createTitle();
@@ -122,6 +123,7 @@ export class TitleScene extends Phaser.Scene {
 
   private moveSelection(direction: number): void {
     audioManager.unlock();
+    audioManager.playMusic('title');
     audioManager.playSfx('menu');
     this.selectedIndex = Phaser.Math.Wrap(this.selectedIndex + direction, 0, OPTIONS.length);
     this.renderMenu();
@@ -129,6 +131,7 @@ export class TitleScene extends Phaser.Scene {
 
   private confirmSelection(): void {
     audioManager.unlock();
+    audioManager.playMusic('title');
     audioManager.playSfx('confirm');
 
     const selected = OPTIONS[this.selectedIndex];
