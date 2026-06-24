@@ -20,6 +20,7 @@ export interface SceneTransitionPayload {
   returnAreaKey?: FieldAreaKey;
   returnSpawnId?: string;
   battleConfig?: BattleConfig;
+  enemyId?: string;
 }
 
 export interface SceneTransitionOptions {
