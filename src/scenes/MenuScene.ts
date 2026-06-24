@@ -7,6 +7,8 @@ import { saveManager, type SaveSlotSummary } from '../systems/save';
 const GAME_WIDTH = 640;
 const GAME_HEIGHT = 360;
 const TABS = ['Story', 'Status', 'Items', 'Save/Load', 'Options'] as const;
+const LOCKED_STORY_LABEL = '???';
+const LOCKED_STORY_HINT = 'This chapter beat is hidden until the story reaches it.';
 
 type TabName = (typeof TABS)[number];
 type MenuMode = 'tabs' | 'items-target';
@@ -104,6 +106,7 @@ export class MenuScene extends Phaser.Scene {
     this.add.rectangle(18, 16, GAME_WIDTH - 36, GAME_HEIGHT - 32).setOrigin(0).setStrokeStyle(2, 0xffd07a, 1);
     this.add.rectangle(28, 66, 168, 252, 0x0d1020, 0.95).setOrigin(0).setStrokeStyle(1, 0x42506f, 1);
     this.add.rectangle(210, 66, 402, 252, 0x0d1020, 0.95).setOrigin(0).setStrokeStyle(1, 0x42506f, 1);
+    this.add.rectangle(222, 286, 378, 30, 0x080b16, 0.96).setOrigin(0).setStrokeStyle(1, 0x42506f, 1);
 
     this.titleText = this.add.text(34, 28, 'THE LAST SKYWELL', {
       fontFamily: 'monospace',
@@ -117,18 +120,18 @@ export class MenuScene extends Phaser.Scene {
       color: '#98a7ca'
     });
 
-    this.noticeText = this.add.text(226, 300, '', {
+    this.noticeText = this.add.text(226, 291, '', {
       fontFamily: 'monospace',
       fontSize: '8px',
       color: '#fff7d6',
       fixedWidth: 370,
-      fixedHeight: 26,
+      fixedHeight: 22,
       wordWrap: { width: 370, useAdvancedWrap: true }
     });
 
-    this.helpText = this.add.text(34, 336, '', {
+    this.helpText = this.add.text(34, 326, '', {
       fontFamily: 'monospace',
-      fontSize: '9px',
+      fontSize: '8px',
       color: '#98a7ca',
       fixedWidth: 560
     });
@@ -264,17 +267,26 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private renderStoryContent(): void {
+    const currentBeatIndex = CHAPTER1_STORY.currentBeatIndex;
     this.addContentText(226, 82, CHAPTER1_STORY.title.toUpperCase(), '#ffe39b', 13);
-    this.addContentText(226, 102, CHAPTER1_STORY.subtitle, '#b8c7e8', 9);
-    this.addContentText(226, 124, `Now: ${CHAPTER1_STORY.currentObjective}`, '#fff7d6', 10);
+    this.addContentText(226, 102, 'Story Log', '#b8c7e8', 9);
+    this.addContentText(226, 120, `Now: ${CHAPTER1_STORY.currentObjective}`, '#fff7d6', 10);
 
-    this.options = CHAPTER1_STORY.beats.map((beat, index) => ({
-      label: `${index + 1}. ${beat}`,
-      hint: CHAPTER1_STORY.beatDetails[index] ?? beat,
-      action: () => this.setNotice(CHAPTER1_STORY.beatDetails[index] ?? beat)
-    }));
+    this.options = CHAPTER1_STORY.beats.map((beat, index) => {
+      const isUnlocked = index <= currentBeatIndex;
+      const isCurrent = index === currentBeatIndex;
+      const marker = isCurrent ? '▶' : index < currentBeatIndex ? '✓' : '·';
+      const label = isUnlocked ? `${marker} ${index + 1}. ${beat}` : `${marker} ${index + 1}. ${LOCKED_STORY_LABEL}`;
+      const hint = isUnlocked ? CHAPTER1_STORY.beatDetails[index] ?? beat : LOCKED_STORY_HINT;
 
-    this.drawOptions(226, 156, 18, 360, 9);
+      return {
+        label,
+        hint,
+        action: () => this.setNotice(hint)
+      };
+    });
+
+    this.drawOptions(226, 150, 16, 360, 8);
   }
 
   private renderStatusContent(): void {
@@ -474,8 +486,8 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private shortenNotice(message: string): string {
-    if (message.length <= 128) return message;
-    return `${message.slice(0, 125)}...`;
+    if (message.length <= 118) return message;
+    return `${message.slice(0, 115)}...`;
   }
 
   private describeSave(summary: SaveSlotSummary): string {
