@@ -1,10 +1,19 @@
 import Phaser from 'phaser';
+import enemiesData from '../data/enemies.json';
+import itemsData from '../data/items.json';
+import skillsData from '../data/skills.json';
 
 const GAME_WIDTH = 640;
 const GAME_HEIGHT = 360;
 const ATB_MAX = 100;
 const ATB_FILL_SCALE = 0.003;
 const COMMANDS = ['Attack', 'Skill', 'Item', 'Guard', 'Run'] as const;
+
+const HERO_SKILL_IDS: Record<string, string[]> = {
+  rowan: ['spark-thrust'],
+  lyra: ['mending-bell'],
+  bronn: ['guard-break']
+};
 
 type Team = 'party' | 'enemy';
 type BattleMode = 'none' | 'command' | 'skills' | 'items' | 'target-enemy' | 'target-ally' | 'result';
@@ -29,6 +38,21 @@ type ItemStack = {
   healAmount: number;
   target: TargetKind;
   description: string;
+};
+
+type EnemyDefinition = {
+  id: string;
+  name: string;
+  textureKey: string;
+  maxHp: number;
+  maxMp: number;
+  speed: number;
+  attack: number;
+  defense: number;
+  skillIds?: string[];
+  weakness?: string;
+  drops?: Array<{ itemId: string; chance: number }>;
+  actions?: string[];
 };
 
 type Combatant = {
@@ -67,6 +91,10 @@ type CombatantUi = {
   mpBar?: BarUi;
   atbBar?: BarUi;
 };
+
+const SKILLS = skillsData as Skill[];
+const ITEMS = itemsData as ItemStack[];
+const ENEMIES = enemiesData as EnemyDefinition[];
 
 export class BattleScene extends Phaser.Scene {
   private party: Combatant[] = [];
@@ -131,63 +159,43 @@ export class BattleScene extends Phaser.Scene {
     this.actorUi.clear();
     this.menuTexts = [];
 
-    const rowanSkills: Skill[] = [
-      {
-        id: 'spark-thrust',
-        name: 'Spark Thrust',
-        mpCost: 4,
-        power: 34,
-        kind: 'damage',
-        target: 'enemy',
-        description: 'Lightning spear hit'
-      }
-    ];
-
-    const lyraSkills: Skill[] = [
-      {
-        id: 'mending-bell',
-        name: 'Mending Bell',
-        mpCost: 5,
-        power: 46,
-        kind: 'heal',
-        target: 'ally',
-        description: 'Restore ally HP'
-      }
-    ];
-
-    const bronnSkills: Skill[] = [
-      {
-        id: 'guard-break',
-        name: 'Guard Break',
-        mpCost: 4,
-        power: 25,
-        kind: 'guard-break',
-        target: 'enemy',
-        description: 'Damage and crack armor'
-      }
-    ];
-
     this.party = [
-      this.makeCombatant('rowan', 'Rowan', 'party', 'battle-rowan', 148, 20, 16, 18, 5, rowanSkills),
-      this.makeCombatant('lyra', 'Lyra', 'party', 'battle-lyra', 112, 34, 13, 10, 4, lyraSkills),
-      this.makeCombatant('bronn', 'Bronn', 'party', 'battle-bronn', 182, 16, 10, 20, 8, bronnSkills)
+      this.makeCombatant('rowan', 'Rowan', 'party', 'battle-rowan', 148, 20, 16, 18, 5, this.getSkillsForHero('rowan')),
+      this.makeCombatant('lyra', 'Lyra', 'party', 'battle-lyra', 112, 34, 13, 10, 4, this.getSkillsForHero('lyra')),
+      this.makeCombatant('bronn', 'Bronn', 'party', 'battle-bronn', 182, 16, 10, 20, 8, this.getSkillsForHero('bronn'))
     ];
 
-    this.enemies = [
-      this.makeCombatant('wisp-a', 'Engine Wisp', 'enemy', 'enemy-wisp', 92, 10, 11, 14, 3, []),
-      this.makeCombatant('beetle-a', 'Clock Beetle', 'enemy', 'enemy-beetle', 126, 0, 8, 18, 6, [])
-    ];
+    this.enemies = ENEMIES.map((enemy) => this.makeEnemy(enemy));
+    this.items = ITEMS.map((item) => ({ ...item }));
+  }
 
-    this.items = [
-      {
-        id: 'potion',
-        name: 'Potion',
-        quantity: 3,
-        healAmount: 55,
-        target: 'ally',
-        description: 'Restore 55 HP'
-      }
-    ];
+  private getSkillsForHero(heroId: string): Skill[] {
+    return (HERO_SKILL_IDS[heroId] ?? []).map((skillId) => this.getSkill(skillId));
+  }
+
+  private getSkill(skillId: string): Skill {
+    const skill = SKILLS.find((candidate) => candidate.id === skillId);
+    if (!skill) {
+      throw new Error(`Missing skill data for ${skillId}.`);
+    }
+
+    return { ...skill };
+  }
+
+  private makeEnemy(enemy: EnemyDefinition): Combatant {
+    const skills = (enemy.skillIds ?? []).map((skillId) => this.getSkill(skillId));
+    return this.makeCombatant(
+      enemy.id,
+      enemy.name,
+      'enemy',
+      enemy.textureKey,
+      enemy.maxHp,
+      enemy.maxMp,
+      enemy.speed,
+      enemy.attack,
+      enemy.defense,
+      skills
+    );
   }
 
   private makeCombatant(
@@ -263,15 +271,19 @@ export class BattleScene extends Phaser.Scene {
 
     const enemyPositions = [
       { x: 470, y: 94 },
-      { x: 504, y: 160 }
+      { x: 504, y: 160 },
+      { x: 456, y: 184 },
+      { x: 526, y: 70 }
     ];
 
     this.party.forEach((hero, index) => {
-      hero.sprite = this.createActorSprite(hero, heroPositions[index].x, heroPositions[index].y, false);
+      const position = heroPositions[index] ?? { x: 140, y: 80 + index * 48 };
+      hero.sprite = this.createActorSprite(hero, position.x, position.y, false);
     });
 
     this.enemies.forEach((enemy, index) => {
-      enemy.sprite = this.createActorSprite(enemy, enemyPositions[index].x, enemyPositions[index].y, true);
+      const position = enemyPositions[index] ?? { x: 468 + index * 22, y: 94 + index * 28 };
+      enemy.sprite = this.createActorSprite(enemy, position.x, position.y, true);
     });
   }
 
