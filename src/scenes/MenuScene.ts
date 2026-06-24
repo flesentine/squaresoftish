@@ -117,18 +117,20 @@ export class MenuScene extends Phaser.Scene {
       color: '#98a7ca'
     });
 
-    this.helpText = this.add.text(34, 326, '', {
+    this.noticeText = this.add.text(226, 300, '', {
+      fontFamily: 'monospace',
+      fontSize: '8px',
+      color: '#fff7d6',
+      fixedWidth: 370,
+      fixedHeight: 26,
+      wordWrap: { width: 370, useAdvancedWrap: true }
+    });
+
+    this.helpText = this.add.text(34, 336, '', {
       fontFamily: 'monospace',
       fontSize: '9px',
       color: '#98a7ca',
       fixedWidth: 560
-    });
-
-    this.noticeText = this.add.text(210, 326, '', {
-      fontFamily: 'monospace',
-      fontSize: '9px',
-      color: '#fff7d6',
-      fixedWidth: 402
     });
   }
 
@@ -268,8 +270,8 @@ export class MenuScene extends Phaser.Scene {
 
     this.options = CHAPTER1_STORY.beats.map((beat, index) => ({
       label: `${index + 1}. ${beat}`,
-      hint: index === 0 ? CHAPTER1_STORY.synopsis : beat,
-      action: () => this.setNotice(beat)
+      hint: CHAPTER1_STORY.beatDetails[index] ?? beat,
+      action: () => this.setNotice(CHAPTER1_STORY.beatDetails[index] ?? beat)
     }));
 
     this.drawOptions(226, 156, 18, 360, 9);
@@ -468,7 +470,12 @@ export class MenuScene extends Phaser.Scene {
   private getNoticeText(): string {
     if (this.focus === 'tabs' && this.mode === 'tabs') return 'Choose a menu section.';
     if (this.options.length === 0) return '';
-    return this.options[this.selectedIndex]?.hint ?? '';
+    return this.shortenNotice(this.options[this.selectedIndex]?.hint ?? '');
+  }
+
+  private shortenNotice(message: string): string {
+    if (message.length <= 128) return message;
+    return `${message.slice(0, 125)}...`;
   }
 
   private describeSave(summary: SaveSlotSummary): string {
@@ -484,7 +491,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   private setNotice(message: string): void {
-    this.noticeText.setText(message);
+    this.noticeText.setText(this.shortenNotice(message));
   }
 
   private closeMenu(): void {
