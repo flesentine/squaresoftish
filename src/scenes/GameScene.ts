@@ -214,8 +214,8 @@ export class GameScene extends Phaser.Scene {
     const line = npc.dialogue[lineIndex];
     const remaining = npc.dialogue.length - lineIndex - 1;
 
-    this.dialogueName.setText(npc.name);
-    this.dialogueText.setText(line);
+    this.dialogueName.setText(line.speaker ?? npc.name);
+    this.dialogueText.setText(line.text);
     this.dialogueHint.setText(remaining > 0 ? 'E / Space / Enter: Next' : 'E / Space / Enter: Close');
     this.dialogueBox.setVisible(true);
   }
@@ -250,7 +250,7 @@ export class GameScene extends Phaser.Scene {
   private createDialogueBox(): void {
     const margin = 18;
     const panelWidth = GAME_WIDTH - margin * 2;
-    const panelHeight = 112;
+    const panelHeight = 118;
     const x = margin;
     const y = GAME_HEIGHT - panelHeight - 14;
     const textWidth = panelWidth - 32;
@@ -272,9 +272,9 @@ export class GameScene extends Phaser.Scene {
       fontSize: '12px',
       color: '#fff9ed',
       fixedWidth: textWidth,
-      fixedHeight: 48,
+      fixedHeight: 60,
       wordWrap: { width: textWidth, useAdvancedWrap: true },
-      lineSpacing: 4
+      lineSpacing: 3
     });
 
     this.dialogueHint = this.add.text(panelWidth - 16, panelHeight - 16, '', {
@@ -367,6 +367,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createTileTextures(): void {
+    if (this.textures.exists('tile-grass')) return;
+
     const g = this.make.graphics({ x: 0, y: 0 }, false);
 
     g.fillStyle(0x4f9f5b, 1);
@@ -400,6 +402,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createHeroTexture(key: string, bodyColor: number, faceColor: number, direction: Direction): void {
+    if (this.textures.exists(key)) return;
+
     const g = this.make.graphics({ x: 0, y: 0 }, false);
     g.fillStyle(0x000000, 0.24);
     g.fillEllipse(16, 28, 18, 6);
@@ -428,6 +432,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createNpcTexture(key: string, bodyColor: number, accentColor: number): void {
+    if (this.textures.exists(key)) return;
+
     const g = this.make.graphics({ x: 0, y: 0 }, false);
     g.fillStyle(0x000000, 0.24);
     g.fillEllipse(16, 28, 18, 6);
