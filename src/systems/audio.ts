@@ -40,27 +40,170 @@ const SONGS: Record<MusicCue, Song> = {
   field: {
     bpm: 118,
     channels: [
-      { instrument: 'lead', volume: 0.07, echo: 0.45, notes: ['E5:2', null, 'G5', 'A5', 'B5:2', null, 'A5', 'G5', 'E5', 'D5', 'E5:2', null, 'B4', 'D5', 'E5:2', null, 'G5:2', null, 'A5', 'B5', 'D6:2', null, 'B5', 'A5', 'G5', 'E5', 'D5', 'E5', 'G5:2', null, 'E5:2', null] },
-      { instrument: 'bell', volume: 0.04, echo: 0.6, notes: ['E6', null, 'B5', null, 'G5', null, 'B5', null, 'D6', null, 'A5', null, 'E5', null, 'A5', null] },
-      { instrument: 'bass', volume: 0.08, echo: 0.08, notes: ['E2:2', null, 'E3', null, 'D2:2', null, 'D3', null, 'C2:2', null, 'C3', null, 'D2:2', null, 'D3', null] },
-      { instrument: 'hat', volume: 0.018, echo: 0.02, notes: [null, 'x', null, 'x', null, 'x', null, 'x', null, 'x', null, 'x', null, 'x', null, 'x'] }
+      {
+        instrument: 'lead',
+        volume: 0.076,
+        echo: 0.48,
+        notes: [
+          'E5:2', null, 'G5', 'A5', 'B5:2', null, 'A5', 'G5',
+          'E5', 'D5', 'E5:2', null, 'B4', 'D5', 'E5:2', null,
+          'G5:2', null, 'A5', 'B5', 'D6:2', null, 'B5', 'A5',
+          'G5', 'E5', 'D5', 'E5', 'G5:2', null, 'E5:2', null,
+          'B5:2', null, 'D6', 'E6', 'G6:2', null, 'E6', 'D6',
+          'B5', 'A5', 'B5:2', null, 'G5', 'A5', 'B5:2', null,
+          'A5', 'G5', 'E5', 'D5', 'E5', 'G5', 'A5', 'B5',
+          'D6:2', null, 'B5', 'A5', 'G5', 'E5', 'D5', 'E5:2'
+        ]
+      },
+      {
+        instrument: 'bell',
+        volume: 0.043,
+        echo: 0.64,
+        notes: [
+          'E6', null, 'B5', null, 'G5', null, 'B5', null,
+          'D6', null, 'A5', null, 'E5', null, 'A5', null,
+          'G6', null, 'D6', null, 'B5', null, 'D6', null,
+          'E6', null, 'B5', null, 'G5', null, 'B5', null,
+          'B6', null, 'G6', null, 'E6', null, 'G6', null,
+          'A6', null, 'E6', null, 'B5', null, 'E6', null,
+          'G6', null, 'D6', null, 'B5', null, 'D6', null,
+          'E6', null, 'B5', null, 'G5', null, 'B5', null
+        ]
+      },
+      {
+        instrument: 'pad',
+        volume: 0.028,
+        echo: 0.36,
+        notes: [
+          'E3:8', null, null, null, null, null, null, null,
+          'D3:8', null, null, null, null, null, null, null,
+          'C3:8', null, null, null, null, null, null, null,
+          'D3:8', null, null, null, null, null, null, null,
+          'G3:8', null, null, null, null, null, null, null,
+          'A3:8', null, null, null, null, null, null, null,
+          'C3:8', null, null, null, null, null, null, null,
+          'D3:8', null, null, null, null, null, null, null
+        ]
+      },
+      {
+        instrument: 'bass',
+        volume: 0.088,
+        echo: 0.08,
+        notes: [
+          'E2:2', null, 'E3', null, 'D2:2', null, 'D3', null,
+          'C2:2', null, 'C3', null, 'D2:2', null, 'D3', null,
+          'E2:2', null, 'E3', null, 'G2:2', null, 'G3', null,
+          'C2:2', null, 'C3', null, 'D2:2', null, 'D3', null,
+          'G2:2', null, 'G3', null, 'A2:2', null, 'A3', null,
+          'B2:2', null, 'B3', null, 'G2:2', null, 'G3', null,
+          'C2:2', null, 'C3', null, 'D2:2', null, 'D3', null,
+          'E2:2', null, 'B2', null, 'E3:2', null, null, null
+        ]
+      },
+      {
+        instrument: 'kick',
+        volume: 0.055,
+        echo: 0.01,
+        notes: [
+          'x', null, null, null, null, null, null, null,
+          'x', null, null, null, null, null, null, null,
+          'x', null, null, null, null, null, 'x', null,
+          'x', null, null, null, null, null, null, null
+        ]
+      },
+      {
+        instrument: 'snare',
+        volume: 0.035,
+        echo: 0.05,
+        notes: [
+          null, null, null, null, 'x', null, null, null,
+          null, null, null, null, 'x', null, null, null,
+          null, null, null, null, 'x', null, null, null,
+          null, null, null, null, 'x', null, null, null
+        ]
+      },
+      {
+        instrument: 'hat',
+        volume: 0.018,
+        echo: 0.02,
+        notes: [null, 'x', null, 'x', null, 'x', null, 'x', null, 'x', null, 'x', null, 'x', null, 'x']
+      }
     ]
   },
   battle: {
-    bpm: 152,
+    bpm: 154,
     channels: [
-      { instrument: 'lead', volume: 0.085, echo: 0.28, notes: ['E5', 'G5', 'B5', 'E6', 'D6:2', null, 'B5', 'A5', 'G5', 'B5', 'D6', 'G6', 'F#6:2', null, 'D6', 'B5', 'A5', 'C6', 'E6', 'A6', 'G6:2', null, 'E6', 'C6', 'B5', 'D6', 'F#6', 'B6', 'A6', 'G6', 'F#6', 'D6'] },
-      { instrument: 'bass', volume: 0.095, echo: 0.04, notes: ['E2', 'E2', 'E3', 'E2', 'D2', 'D2', 'D3', 'D2', 'C2', 'C2', 'C3', 'C2', 'D2', 'D2', 'D3', 'D2'] },
-      { instrument: 'kick', volume: 0.1, echo: 0.01, notes: ['x', null, null, null, 'x', null, null, null, 'x', null, null, 'x', 'x', null, null, null] },
-      { instrument: 'snare', volume: 0.075, echo: 0.06, notes: [null, null, null, null, 'x', null, null, null, null, null, null, null, 'x', null, null, null] },
-      { instrument: 'hat', volume: 0.025, echo: 0.02, notes: ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'] }
+      {
+        instrument: 'lead',
+        volume: 0.088,
+        echo: 0.3,
+        notes: [
+          'E5', 'G5', 'B5', 'E6', 'D6:2', null, 'B5', 'A5',
+          'G5', 'B5', 'D6', 'G6', 'F#6:2', null, 'D6', 'B5',
+          'A5', 'C6', 'E6', 'A6', 'G6:2', null, 'E6', 'C6',
+          'B5', 'D6', 'F#6', 'B6', 'A6', 'G6', 'F#6', 'D6',
+          'E6', 'D6', 'B5', 'G5', 'A5', 'B5', 'D6', 'E6',
+          'G6:2', null, 'E6', 'D6', 'B5', 'A5', 'G5', 'E5',
+          'A5', 'C6', 'E6', 'G6', 'F#6', 'E6', 'D6', 'B5',
+          'E6', 'G6', 'B6', 'A6', 'G6', 'F#6', 'E6', 'D6'
+        ]
+      },
+      {
+        instrument: 'bass',
+        volume: 0.098,
+        echo: 0.04,
+        notes: [
+          'E2', 'E2', 'E3', 'E2', 'D2', 'D2', 'D3', 'D2',
+          'C2', 'C2', 'C3', 'C2', 'D2', 'D2', 'D3', 'D2',
+          'A1', 'A1', 'A2', 'A1', 'C2', 'C2', 'C3', 'C2',
+          'B1', 'B1', 'B2', 'B1', 'D2', 'D2', 'D3', 'D2'
+        ]
+      },
+      {
+        instrument: 'kick',
+        volume: 0.105,
+        echo: 0.01,
+        notes: ['x', null, null, null, 'x', null, null, null, 'x', null, null, 'x', 'x', null, null, null]
+      },
+      {
+        instrument: 'snare',
+        volume: 0.078,
+        echo: 0.07,
+        notes: [null, null, null, null, 'x', null, null, null, null, null, null, null, 'x', null, null, null]
+      },
+      {
+        instrument: 'hat',
+        volume: 0.026,
+        echo: 0.02,
+        notes: ['x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']
+      }
     ]
   },
   menu: {
     bpm: 94,
     channels: [
-      { instrument: 'bell', volume: 0.052, echo: 0.62, notes: ['G5:2', null, 'B5', null, 'D6:2', null, 'B5', null, 'A5:2', null, 'C6', null, 'E6:2', null, 'C6', null] },
-      { instrument: 'bass', volume: 0.06, echo: 0.06, notes: ['G2:4', null, null, null, 'A2:4', null, null, null, 'E2:4', null, null, null, 'D2:4', null, null, null] }
+      {
+        instrument: 'bell',
+        volume: 0.052,
+        echo: 0.62,
+        notes: [
+          'G5:2', null, 'B5', null, 'D6:2', null, 'B5', null,
+          'A5:2', null, 'C6', null, 'E6:2', null, 'C6', null,
+          'B5:2', null, 'D6', null, 'G6:2', null, 'D6', null,
+          'A5:2', null, 'C6', null, 'E6:2', null, 'C6', null
+        ]
+      },
+      {
+        instrument: 'bass',
+        volume: 0.062,
+        echo: 0.06,
+        notes: [
+          'G2:4', null, null, null, 'A2:4', null, null, null,
+          'E2:4', null, null, null, 'D2:4', null, null, null,
+          'C2:4', null, null, null, 'D2:4', null, null, null,
+          'G2:4', null, null, null, 'D2:4', null, null, null
+        ]
+      }
     ]
   },
   victory: {
