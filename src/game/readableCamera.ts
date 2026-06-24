@@ -13,11 +13,20 @@ export function keepFieldUiReadable(scene: Phaser.Scene): void {
 
   const fieldScene = scene as FieldSceneLike;
 
-  if (fieldScene.areaId === 'forest') {
-    fieldScene.blockers?.clear(true, true);
-  }
+  if (fieldScene.areaId !== 'forest') return;
 
-  if (fieldScene.areaId === 'forest' && fieldScene.spawnId === 'fromVael' && fieldScene.player && fieldScene.player.x < 170) {
-    fieldScene.player.setPosition(4.5 * 32, 10.5 * 32);
+  fieldScene.blockers?.clear(true, true);
+
+  if (fieldScene.player) {
+    const body = fieldScene.player.body as Phaser.Physics.Arcade.Body | undefined;
+    body?.setSize(10, 10);
+    body?.setOffset(11, 18);
+    if (body) {
+      body.checkCollision.none = true;
+    }
+
+    if (fieldScene.spawnId === 'fromVael' && fieldScene.player.x < 210) {
+      fieldScene.player.setPosition(5.5 * 32, 10.5 * 32);
+    }
   }
 }
