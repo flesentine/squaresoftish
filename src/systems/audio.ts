@@ -1,6 +1,6 @@
 import { gameState } from './gameState';
 
-type MusicCue = 'field' | 'battle' | 'menu' | 'victory';
+type MusicCue = 'title' | 'field' | 'battle' | 'menu' | 'victory';
 type SfxCue = 'confirm' | 'cancel' | 'menu' | 'hit' | 'heal' | 'save' | 'load' | 'error' | 'battleStart' | 'victory';
 type Instrument = 'lead' | 'bell' | 'bass' | 'pad' | 'kick' | 'snare' | 'hat';
 
@@ -37,6 +37,111 @@ const NOTE_OFFSETS: Record<string, number> = {
 };
 
 const SONGS: Record<MusicCue, Song> = {
+  title: {
+    bpm: 96,
+    channels: [
+      {
+        instrument: 'lead',
+        volume: 0.086,
+        echo: 0.56,
+        notes: [
+          'C5:4', null, null, null, 'G5:4', null, null, null,
+          'A5:3', null, null, 'G5', 'E5:4', null, null, null,
+          'F5:3', null, null, 'E5', 'D5:4', null, null, null,
+          'E5:2', null, 'G5:2', null, 'C6:6', null, null, null,
+
+          'E5:2', null, 'F5', 'G5', 'A5:2', null, 'G5', 'E5',
+          'D5:2', null, 'E5', 'G5', 'F5:4', null, null, null,
+          'G5:2', null, 'A5', 'C6', 'D6:3', null, null, 'C6',
+          'A5:2', null, 'G5:2', null, 'E5:6', null, null, null,
+
+          'C6:4', null, null, null, 'E6:4', null, null, null,
+          'D6:2', null, 'C6', 'A5', 'G5:4', null, null, null,
+          'A5:2', null, 'C6', 'D6', 'E6:3', null, null, 'D6',
+          'C6:2', null, 'G5:2', null, 'C6:6', null, null, null,
+
+          'G5:2', null, 'A5', 'C6', 'D6:2', null, 'E6', 'D6',
+          'C6:2', null, 'A5', 'G5', 'E5:4', null, null, null,
+          'F5:2', null, 'G5', 'A5', 'C6:2', null, 'A5', 'G5',
+          'E5:2', null, 'D5:2', null, 'C5:8', null, null, null
+        ]
+      },
+      {
+        instrument: 'bell',
+        volume: 0.05,
+        echo: 0.7,
+        notes: [
+          'G6', null, 'E6', null, 'C6', null, 'E6', null,
+          'A6', null, 'E6', null, 'C6', null, 'E6', null,
+          'F6', null, 'D6', null, 'A5', null, 'D6', null,
+          'G6', null, 'E6', null, 'C6', null, 'E6', null,
+
+          'C7', null, 'G6', null, 'E6', null, 'G6', null,
+          'D7', null, 'A6', null, 'F6', null, 'A6', null,
+          'E7', null, 'C7', null, 'G6', null, 'C7', null,
+          'C7', null, 'G6', null, 'E6', null, 'G6', null
+        ]
+      },
+      {
+        instrument: 'pad',
+        volume: 0.038,
+        echo: 0.42,
+        notes: [
+          'C3:8', null, null, null, null, null, null, null,
+          'A2:8', null, null, null, null, null, null, null,
+          'F2:8', null, null, null, null, null, null, null,
+          'G2:8', null, null, null, null, null, null, null,
+          'C3:8', null, null, null, null, null, null, null,
+          'D3:8', null, null, null, null, null, null, null,
+          'E3:8', null, null, null, null, null, null, null,
+          'G2:8', null, null, null, null, null, null, null
+        ]
+      },
+      {
+        instrument: 'bass',
+        volume: 0.096,
+        echo: 0.08,
+        notes: [
+          'C2:2', null, 'C3', null, 'G2:2', null, 'G3', null,
+          'A2:2', null, 'A3', null, 'E2:2', null, 'E3', null,
+          'F2:2', null, 'F3', null, 'C2:2', null, 'C3', null,
+          'G1:2', null, 'G2', null, 'G2:2', null, 'B2', null,
+          'C2:2', null, 'G2', null, 'C3:2', null, 'G2', null,
+          'D2:2', null, 'A2', null, 'D3:2', null, 'A2', null,
+          'E2:2', null, 'B2', null, 'E3:2', null, 'B2', null,
+          'G1:2', null, 'D2', null, 'G2:2', null, null, null
+        ]
+      },
+      {
+        instrument: 'kick',
+        volume: 0.075,
+        echo: 0.01,
+        notes: [
+          'x', null, null, null, null, null, null, null,
+          'x', null, null, null, null, null, null, null,
+          'x', null, null, null, null, null, null, null,
+          'x', null, null, null, 'x', null, null, null
+        ]
+      },
+      {
+        instrument: 'snare',
+        volume: 0.045,
+        echo: 0.08,
+        notes: [
+          null, null, null, null, 'x', null, null, null,
+          null, null, null, null, 'x', null, null, null,
+          null, null, null, null, 'x', null, null, null,
+          null, null, null, null, 'x', null, null, null
+        ]
+      },
+      {
+        instrument: 'hat',
+        volume: 0.016,
+        echo: 0.03,
+        notes: [null, null, 'x', null, null, null, 'x', null, null, null, 'x', null, null, null, 'x', null]
+      }
+    ]
+  },
   field: {
     bpm: 118,
     channels: [
