@@ -21,6 +21,7 @@ export class GameScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<'up' | 'down' | 'left' | 'right', Phaser.Input.Keyboard.Key>;
   private interactKeys!: Phaser.Input.Keyboard.Key[];
+  private battleKey!: Phaser.Input.Keyboard.Key;
   private lastDirection: Direction = 'down';
   private promptText!: Phaser.GameObjects.Text;
   private dialogueBox!: Phaser.GameObjects.Container;
@@ -65,6 +66,12 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    if (Phaser.Input.Keyboard.JustDown(this.battleKey)) {
+      this.player.setVelocity(0, 0);
+      this.scene.start('BattleScene');
+      return;
+    }
+
     this.handleMovement();
     this.updateInteractionPrompt();
 
@@ -95,6 +102,7 @@ export class GameScene extends Phaser.Scene {
       keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
       keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER)
     ];
+    this.battleKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B);
   }
 
   private didPressInteract(): boolean {
@@ -156,7 +164,10 @@ export class GameScene extends Phaser.Scene {
   private updateInteractionPrompt(): void {
     const npc = this.getNearestNpc();
     if (!npc) {
-      this.promptText.setVisible(false);
+      this.promptText
+        .setText('B: Test ATB battle')
+        .setPosition(this.player.x, this.player.y - 30)
+        .setVisible(true);
       return;
     }
 
