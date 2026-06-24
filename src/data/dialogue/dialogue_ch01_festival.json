@@ -14,12 +14,12 @@
       {
         "speaker": "Elder Mira",
         "portrait": "elder_mira_neutral",
-        "text": "Talk to everyone. Small towns hide big quests."
+        "text": "Press M to open the menu. It tracks party status, inventory, saves, and options now."
       },
       {
         "speaker": "Elder Mira",
         "portrait": "elder_mira_concerned",
-        "text": "Come back after we add inventory and I might give you a key."
+        "text": "Save before wandering east. Engine-things hate brave children and underprepared couriers."
       }
     ]
   },
@@ -38,12 +38,12 @@
       {
         "speaker": "Guard Toma",
         "portrait": "guard_toma_neutral",
-        "text": "You can move with WASD or arrow keys. Press E or Space to talk."
+        "text": "Move with WASD or arrows. Press E or Space to talk. Press B to test battle."
       },
       {
         "speaker": "Guard Toma",
         "portrait": "guard_toma_alert",
-        "text": "Very official guard advice: save before doing anything dumb."
+        "text": "Very official guard advice: the new save screen is not decorative. Use it."
       }
     ]
   },
@@ -57,17 +57,17 @@
       {
         "speaker": "Merchant Pip",
         "portrait": "merchant_pip_neutral",
-        "text": "Fresh potions! Invisible armor! Slightly haunted bread!"
+        "text": "Fresh potions! Sky tonics! Slightly haunted bread!"
       },
       {
         "speaker": "Merchant Pip",
         "portrait": "merchant_pip_smile",
-        "text": "Okay, none of that is implemented yet. But the dialogue box works."
+        "text": "Okay, I still cannot sell yet. But your inventory is real now."
       },
       {
         "speaker": "Merchant Pip",
         "portrait": "merchant_pip_smile",
-        "text": "Next upgrade should be shops or quests. That is where this starts feeling real."
+        "text": "Use items from the menu or in battle. That is where this starts feeling like an RPG."
       }
     ]
   }
