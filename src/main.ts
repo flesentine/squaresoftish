@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import './style.css';
-import { GameScene } from './scenes/GameScene';
+import { ChapterOneFieldScene } from './scenes/ChapterOneFieldScene';
 import { BattleScene } from './scenes/BattleScene';
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -17,7 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false
     }
   },
-  scene: [GameScene, BattleScene],
+  scene: [ChapterOneFieldScene, BattleScene],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
